@@ -64,10 +64,12 @@ def main() -> None:
         visualizer_js = (web_root / "visualizer.js").read_text(encoding="utf-8")
         polish_js = (web_root / "v45-polish.js").read_text(encoding="utf-8")
         reports_js = (web_root / "reports.js").read_text(encoding="utf-8")
+        practice_js = (web_root / "practice.js").read_text(encoding="utf-8")
         app_js = (web_root / "app.js").read_text(encoding="utf-8")
         assert len(visualizer_js) > 1000
         assert len(polish_js) > 1000
         assert len(reports_js) > 1000
+        assert len(practice_js) > 1000
         for asset in ["NOTE_assets.png", "noteSplashes.png", "HURTNOTE_assets.png", "HURTnoteSplashes.png"]:
             assert (web_root / "assets" / asset).exists()
         splash_xml = (web_root / "assets" / "noteSplashes.xml").read_text(encoding="utf-8")
@@ -81,12 +83,18 @@ def main() -> None:
         assert "live drift" in polish_js
         assert "view-reports" in reports_js
         assert "/api/report" in reports_js
+        assert "sectionRanges" in practice_js
+        assert "practiceLoopToggle" in practice_js
+        assert "practiceAddBookmark" in practice_js
+        assert "weakestSection" in practice_js
+        assert "practicePreviousMiss" in practice_js
         assert "/v45-polish.js" in app_js
         assert "/reports.js" in app_js
+        assert "/practice.js" in app_js
         assert v4.APP_VERSION == APP_VERSION
 
     print(f"Rhythm Input Lab {APP_VERSION} self-test passed.")
-    print("Importer, hurt hazards, visualizer polish, audio sync, combo HUD, and the Reports page are present.")
+    print("Importer, visualizer polish, Reports, and the 4.6 practice workspace are present.")
 
 
 if __name__ == "__main__":
