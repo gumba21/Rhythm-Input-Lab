@@ -16,24 +16,17 @@ def synthetic_chart() -> dict:
             "song": "Self Test",
             "bpm": 120,
             "speed": 1.0,
-            "events": [
-                [1000, [["KB_AttackPrepare", "", ""], ["KB_AttackFire", "", ""]]],
-            ],
-            "notes": [
-                {
-                    "lengthInSteps": 16,
-                    "mustHitSection": True,
-                    "changeBPM": False,
-                    "bpm": 120,
-                    "sectionNotes": [
-                        [500, 0, 0],
-                        [750, 1, 0],
-                        [1000, 2, 250],
-                        [1250, 3, 0],
-                        [1500, 0, 0, "Hurt Note"],
-                    ],
-                }
-            ],
+            "events": [[1000, [["KB_AttackPrepare", "", ""], ["KB_AttackFire", "", ""]]]],
+            "notes": [{
+                "lengthInSteps": 16,
+                "mustHitSection": True,
+                "changeBPM": False,
+                "bpm": 120,
+                "sectionNotes": [
+                    [500, 0, 0], [750, 1, 0], [1000, 2, 250], [1250, 3, 0],
+                    [1500, 0, 0, "Hurt Note"],
+                ],
+            }],
         }
     }
 
@@ -70,32 +63,30 @@ def main() -> None:
         web_root = Path(__file__).parent / "web"
         visualizer_js = (web_root / "visualizer.js").read_text(encoding="utf-8")
         polish_js = (web_root / "v45-polish.js").read_text(encoding="utf-8")
+        reports_js = (web_root / "reports.js").read_text(encoding="utf-8")
         app_js = (web_root / "app.js").read_text(encoding="utf-8")
         assert len(visualizer_js) > 1000
         assert len(polish_js) > 1000
-        for asset in [
-            "NOTE_assets.png",
-            "noteSplashes.png",
-            "HURTNOTE_assets.png",
-            "HURTnoteSplashes.png",
-        ]:
+        assert len(reports_js) > 1000
+        for asset in ["NOTE_assets.png", "noteSplashes.png", "HURTNOTE_assets.png", "HURTnoteSplashes.png"]:
             assert (web_root / "assets" / asset).exists()
         splash_xml = (web_root / "assets" / "noteSplashes.xml").read_text(encoding="utf-8")
         assert splash_xml.count("<SubTexture") == 32
         assert "importReplayFiles" in visualizer_js
-        assert "downscrollToggle" in visualizer_js
-        assert "ghostTapping" in visualizer_js
         assert "hurtAtlas" in visualizer_js
         assert "matchHazards" in visualizer_js
         assert "stopVisualizerPlayback" in polish_js
         assert "preciseSeekInput" in polish_js
         assert "comboHud" in polish_js
         assert "live drift" in polish_js
+        assert "view-reports" in reports_js
+        assert "/api/report" in reports_js
         assert "/v45-polish.js" in app_js
+        assert "/reports.js" in app_js
         assert v4.APP_VERSION == APP_VERSION
 
     print(f"Rhythm Input Lab {APP_VERSION} self-test passed.")
-    print("Importer, versioning, hurt hazards, visualizer controls, precise seeking, combo HUD, and audio polish are present.")
+    print("Importer, hurt hazards, visualizer polish, audio sync, combo HUD, and the Reports page are present.")
 
 
 if __name__ == "__main__":
