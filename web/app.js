@@ -1,13 +1,16 @@
 (() => {
-  const loadVisualizer = () => {
+  const loadScript = (src, onload) => {
     const script = document.createElement('script');
-    script.src = '/visualizer.js';
+    script.src = src;
     script.onerror = () => {
       const label = document.querySelector('#connectionLabel');
-      if (label) label.textContent = 'Visualizer script failed to load';
+      if (label) label.textContent = `${src} failed to load`;
     };
+    if (onload) script.onload = onload;
     document.body.appendChild(script);
   };
+
+  const loadVisualizer = () => loadScript('/visualizer.js', () => loadScript('/song-tools.js'));
 
   fetch('/api/health')
     .then(response => response.json())
