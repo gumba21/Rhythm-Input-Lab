@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Rhythm Input Lab 4.2</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">RIL</div>
+      <div><div class="brand-title">Rhythm Input Lab</div><div class="brand-subtitle">Visualizer build 4.2</div></div>
+    </div>
+    <nav class="nav">
+      <button class="nav-button active" data-view="dashboard"><span class="nav-icon">⌂</span>Dashboard</button>
+      <button class="nav-button" data-view="record"><span class="nav-icon">●</span>Record</button>
+      <button class="nav-button" data-view="import"><span class="nav-icon">⇩</span>Import</button>
+      <button class="nav-button" data-view="songs"><span class="nav-icon">♫</span>Songs</button>
+      <button class="nav-button" data-view="visualizer"><span class="nav-icon">▶</span>Visualizer</button>
+      <button class="nav-button" data-view="settings"><span class="nav-icon">⚙</span>Settings</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="connection"><span class="connection-dot"></span><span id="connectionLabel">Local backend connected</span></div>
+      <div>All chart and replay processing stays on this computer.</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section id="view-dashboard" class="view active">
+      <div class="page-head">
+        <div><div class="eyebrow">Overview</div><h1>Welcome back.</h1><p>Your song library, attempts, and chart imports in one place.</p></div>
+        <div class="actions"><button class="button" id="openOutputButton">Open output folder</button><button class="button primary" data-go="record">New recording</button></div>
+      </div>
+      <div id="dashboardMetrics" class="grid metrics"></div>
+      <div class="grid two" style="margin-top:16px">
+        <div class="card"><div class="section-title"><h2>Recent songs</h2><button class="button small" data-go="songs">View library</button></div><div class="section-body"><div id="recentSongs" class="song-grid"></div></div></div>
+        <div class="card"><div class="section-title"><h2>Recent attempts</h2></div><div class="section-body"><div id="recentAttempts" class="list"></div></div></div>
+      </div>
+    </section>
+
+    <section id="view-record" class="view">
+      <div class="page-head"><div><div class="eyebrow">Global input recorder</div><h1>Record a run.</h1><p>Arm the listener, switch to the game, then use your configured start and stop hotkeys.</p></div></div>
+      <div class="grid two">
+        <div class="card pad">
+          <div class="form-grid">
+            <div class="field full"><label>Song name</label><input id="recordSong" placeholder="Termination"></div>
+            <div class="field"><label>Game</label><input id="recordGame" placeholder="PAFN"></div>
+            <div class="field"><label>Difficulty</label><input id="recordDifficulty" placeholder="Very Hard"></div>
+            <div class="field"><label>Key mode</label><select id="recordKeyMode"></select></div>
+            <div class="field"><label>Tags</label><input id="recordTags" placeholder="modchart, dodge"></div>
+            <div class="field full"><label>Pre-play note</label><textarea id="recordPreNote" placeholder="optional"></textarea></div>
+            <div class="field full"><label>Post-play note</label><textarea id="recordPostNote" placeholder="can also be edited after saving"></textarea></div>
+          </div>
+          <div class="divider"></div>
+          <div class="toggle-line"><div><h3>Dodge input</h3><div class="list-sub">Uses the saved dodge binding.</div></div><button id="recordDodgeToggle" class="toggle"></button></div>
+          <div class="actions" style="margin-top:16px"><button class="button primary" id="armRecordButton">Arm recorder</button><button class="button" id="startNowButton" disabled>Start now</button><button class="button danger" id="stopRecordButton" disabled>Stop</button><button class="button" id="cancelRecordButton" disabled>Cancel</button></div>
+          <div class="list-sub" id="recordHotkeyHelp" style="margin-top:12px"></div>
+        </div>
+        <div class="card record-stage">
+          <div style="position:relative">
+            <div id="recordRing" class="record-ring"><div><div class="record-label" id="recordStateLabel">Idle</div><div class="record-value mono" id="recordTime">0:00</div></div></div>
+            <div class="live-stats">
+              <div class="live-stat"><b id="liveLanePresses">0</b><span>lane presses</span></div>
+              <div class="live-stat"><b id="liveDodges">0</b><span>dodges</span></div>
+              <div class="live-stat"><b id="liveNps">0</b><span>current NPS</span></div>
+            </div>
+            <p id="recordMessage" style="margin-top:20px">Ready.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-import" class="view">
+      <div class="page-head"><div><div class="eyebrow">FNF importer</div><h1>Import a song.</h1><p>Legacy and Psych-style JSON charts become a normalized song bundle for analysis and playback.</p></div></div>
+      <div class="grid two">
+        <div class="card pad">
+          <label class="dropzone" id="chartDropzone">
+            <input type="file" id="chartFile" accept="application/json,.json">
+            <div><div style="font-size:34px">⇩</div><h2>Drop a chart JSON here</h2><p>or click to browse</p><div id="chartFileName" class="file-name"></div></div>
+          </label>
+          <div style="height:12px"></div>
+          <label class="dropzone" id="eventsDropzone" style="min-height:120px">
+            <input type="file" id="eventsFile" accept="application/json,.json">
+            <div><h3>Optional separate events.json</h3><p style="margin:5px 0 0">Drop it here when the engine stores events separately.</p><div id="eventsFileName" class="file-name"></div></div>
+          </label>
+        </div>
+        <div class="card pad">
+          <div class="form-grid">
+            <div class="field full"><label>Song folder name</label><input id="importSongName" placeholder="auto-detected from chart"></div>
+            <div class="field"><label>Key mode override</label><select id="importKeyMode"><option value="">Auto detect</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option></select></div>
+          </div>
+          <div id="importPreview" class="empty">Select a chart to preview its basic metadata.</div>
+          <button id="importButton" class="button primary" style="width:100%" disabled>Import song</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-songs" class="view">
+      <div class="page-head">
+        <div><div class="eyebrow">Library</div><h1>Songs.</h1><p>Select a song to inspect its chart or load an attempt into the visualizer.</p></div>
+        <div class="actions"><input id="songSearch" placeholder="Search library…" style="width:240px"><button class="button primary" data-go="import">Import chart</button></div>
+      </div>
+      <div id="songLibrary" class="song-grid"></div>
+    </section>
+
+    <section id="view-visualizer" class="view">
+      <div class="page-head">
+        <div><div class="eyebrow">Chart + input replay</div><h1 id="visualizerTitle">Visualizer.</h1><p id="visualizerSubtitle">Choose a song and attempt from the library.</p></div>
+        <div class="actions"><select id="visualizerSongSelect"><option value="">Choose song</option></select><select id="visualizerAttemptSelect"><option value="">Chart only</option></select></div>
+      </div>
+      <div class="visualizer-layout">
+        <div class="card visualizer-panel">
+          <div class="visualizer-toolbar">
+            <div class="tool-group"><button id="playButton" class="icon-button" title="Play / pause">▶</button><button id="restartButton" class="icon-button" title="Restart">↺</button></div>
+            <div class="tool-group"><select id="viewMode"><option value="compare">Chart + inputs</option><option value="chart">Chart only</option><option value="inputs">Inputs only</option></select><select id="themeMode"><option value="fnf">FNF theme</option><option value="minimal">Minimal theme</option><option value="xray">X-ray theme</option></select></div>
+            <div class="tool-group"><label>Playback</label><select id="playbackRate"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></div>
+            <div class="tool-group"><label>Scroll</label><input id="scrollSpeed" type="range" min="0.4" max="2.5" step="0.05" value="1" style="width:100px"></div>
+            <div class="tool-group"><button id="opponentToggle" class="button small">Opponent off</button><button id="eventsToggle" class="button small">Events on</button><button id="xrayToggle" class="button small">X-ray off</button><button id="splashToggle" class="button small">Splashes on</button><button id="downscrollToggle" class="button small">Downscroll off</button><button id="ghostToggle" class="button small">Ghost tapping on</button></div>
+            <div class="tool-group replay-picker">
+              <label class="button small">Import replay<input id="replayFiles" type="file" accept=".csv,.json,text/csv,application/json" multiple class="hidden"></label>
+              <label class="button small">Attempt folder<input id="replayFolder" type="file" webkitdirectory directory multiple class="hidden"></label>
+              <button id="clearReplay" class="button small">Clear replay</button>
+            </div>
+            <div class="tool-group audio-picker">
+              <label class="button small">Instrumental<input id="instrumentalFile" type="file" accept="audio/*" class="hidden"></label>
+              <button id="clearInstrumental" class="icon-button compact" title="Clear instrumental">×</button>
+              <label class="volume-control" title="Instrumental volume"><span>Inst</span><input id="instrumentalVolume" type="range" min="0" max="100" value="100"><b id="instrumentalVolumeLabel">100%</b></label>
+            </div>
+            <div class="tool-group audio-picker">
+              <label class="button small">Vocals<input id="vocalsFile" type="file" accept="audio/*" class="hidden"></label>
+              <button id="clearVocals" class="icon-button compact" title="Clear vocals">×</button>
+              <label class="volume-control" title="Vocals volume"><span>Vocals</span><input id="vocalsVolume" type="range" min="0" max="100" value="100"><b id="vocalsVolumeLabel">100%</b></label>
+            </div>
+          </div>
+          <div id="replayStatus" class="audio-status replay-status">Replay: none</div>
+          <div id="audioStatus" class="audio-status">Instrumental: none · Vocals: none</div>
+          <div class="visualizer-canvas-wrap">
+            <canvas id="visualizerCanvas"></canvas>
+            <div id="canvasEmpty" class="canvas-empty"><div><div style="font-size:48px">♫</div><h2>No song loaded</h2><p>Open a chart from the Songs tab or import an inputs.csv replay.</p></div></div>
+          </div>
+          <div class="visualizer-bottom">
+            <canvas id="timelineCanvas"></canvas>
+            <div class="seek-row"><span id="currentTime">0:00.00</span><input id="seekRange" type="range" min="0" max="1000" value="0"><span id="durationTime" style="text-align:right">0:00.00</span></div>
+          </div>
+        </div>
+
+        <aside class="card inspector">
+          <div class="inspector-block">
+            <h2>Reconstructed run</h2>
+            <p style="font-size:12px">Physical inputs aligned against the imported chart. These are estimates, not official game judgments.</p>
+            <div class="stat-grid">
+              <div class="stat-chip"><span>Accuracy</span><b id="statAccuracy">—</b></div>
+              <div class="stat-chip"><span>Hit rate</span><b id="statHitRate">—</b></div>
+              <div class="stat-chip"><span>Median abs.</span><b id="statMedianAbs">—</b></div>
+              <div class="stat-chip"><span>Extras</span><b id="statExtras">—</b></div>
+              <div class="stat-chip"><span>Hazard hits</span><b id="statHazards">—</b></div>
+            </div>
+          </div>
+          <div class="inspector-block">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3>Alignment</h3><button id="autoAlignButton" class="button small">Auto-align</button></div>
+            <div class="field" style="margin-top:10px"><label>Recording offset (ms)</label><input id="offsetInput" class="mono" type="number" step="1" value="0"></div>
+            <div class="actions" style="margin-top:8px"><button class="button small offset-nudge" data-nudge="-10">−10</button><button class="button small offset-nudge" data-nudge="-1">−1</button><button class="button small offset-nudge" data-nudge="1">+1</button><button class="button small offset-nudge" data-nudge="10">+10</button></div>
+          </div>
+          <div class="inspector-block"><h3>Judgments</h3><div id="judgmentList" class="judgment-list"></div></div>
+          <div class="inspector-block"><h3>Dodge events</h3><div class="stat-grid"><div class="stat-chip"><span>Matched</span><b id="dodgeMatched">—</b></div><div class="stat-chip"><span>Missed</span><b id="dodgeMissed">—</b></div></div></div>
+          <div class="inspector-block"><h3>Hazards</h3><div class="stat-grid"><div class="stat-chip"><span>Avoided</span><b id="hazardAvoided">—</b></div><div class="stat-chip"><span>Hit</span><b id="hazardHit">—</b></div></div></div>
+          <div class="inspector-block"><h3>At current time</h3><div id="eventsNow" class="event-now"><div class="list-sub">No active events.</div></div></div>
+          <div class="inspector-block"><h3>Inspector</h3><div id="objectInspector" class="list-sub">Click a chart note, input, or event marker.</div></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="view-settings" class="view">
+      <div class="page-head"><div><div class="eyebrow">Configuration</div><h1>Settings.</h1><p>Bindings, recorder behavior, and analysis windows are saved automatically.</p></div><button id="saveSettingsButton" class="button primary">Save settings</button></div>
+      <div class="grid two">
+        <div class="card pad">
+          <h2>Key-mode profiles</h2><p>Exactly 4K through 9K are supported.</p><div id="profileSettings"></div>
+        </div>
+        <div class="grid">
+          <div class="card pad">
+            <h2>Recorder</h2>
+            <div class="form-grid" style="margin-top:14px">
+              <div class="field"><label>Start hotkey</label><input id="settingStartKey"></div>
+              <div class="field"><label>Stop hotkey</label><input id="settingStopKey"></div>
+              <div class="field"><label>Dodge key</label><input id="settingDodgeKey"></div>
+              <div class="field"><label>Output folder</label><input id="settingOutputRoot"></div>
+            </div>
+            <div class="toggle-line"><span>Enable dodge input by default</span><button id="settingDodgeEnabled" class="toggle"></button></div>
+            <div class="toggle-line"><span>Open reports after saving</span><button id="settingOpenReport" class="toggle"></button></div>
+          </div>
+          <div class="card pad">
+            <h2>Judgment approximation</h2>
+            <div class="form-grid" style="margin-top:14px">
+              <div class="field"><label>Safe frames</label><input id="settingSafeFrames" type="number" step="0.1"></div>
+              <div class="field"><label>Assumed FPS</label><input id="settingSafeFps" type="number" step="1"></div>
+              <div class="field"><label>Outer hit window (ms)</label><input id="settingHitWindow" type="number" step="0.1"></div>
+              <div class="field"><label>Sick window (ms)</label><input id="settingPerfectWindow" type="number" step="0.1"></div>
+              <div class="field"><label>Good window (ms)</label><input id="settingGoodWindow" type="number" step="0.1"></div>
+              <div class="field"><label>Bad window (ms)</label><input id="settingBadWindow" type="number" step="0.1"></div>
+              <div class="field full"><label>Derived outer window</label><div id="safeFrameDerived" class="list-sub mono">—</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="toastStack" class="toast-stack"></div>
+<div id="songModal" class="modal-backdrop"><div class="modal card"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="eyebrow">Song details</div><h2 id="modalSongTitle" style="font-size:30px;margin-top:4px"></h2></div><button id="closeSongModal" class="icon-button">×</button></div><div id="modalSongBody" style="margin-top:16px"></div></div></div>
+<audio id="instrumentalAudio" class="hidden" preload="metadata"></audio>
+<audio id="vocalsAudio" class="hidden" preload="metadata"></audio>
+<script src="/app.js"></script>
+</body>
+</html>
