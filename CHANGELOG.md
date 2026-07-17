@@ -1,5 +1,19 @@
 # Changelog
 
+## 4.5.0-dev
+
+### Visualizer polish
+
+- stops playback and both audio tracks when leaving the visualizer or hiding the app
+- automatically loads the newest saved attempt when opening a song in Chart + inputs mode
+- automatically loads an available attempt when switching back to Chart + inputs
+- removes the unclear X-ray theme and toggle
+- adds an editable millisecond-precise seeker with ±10 ms, ±100 ms, and ±1 second nudges
+- adds an estimated live combo HUD with the latest reconstructed judgment, timing offset, and running accuracy
+- tightens instrumental/vocals synchronization during playback and after seeking
+- reports audio duration, live drift, and track-length difference in the visualizer
+- makes Reset view and replay clearing stop active playback cleanly
+
 ## 4.4.0-dev
 
 ### Changed
@@ -9,6 +23,9 @@
 - renamed versioned launchers to `run.bat`, `run-console.bat`, and `run-tests.bat`
 - added `.gitignore`, `requirements.txt`, development documentation, and automated syntax/smoke tests
 - cleaned the README and separated current documentation from version history
+- added per-song custom note and event categorization
+- restored the one-page song analyzer
+- added adjustable visualizer lane length, Reset view, and Attempt only mode
 
 ### Hurt-note support
 
