@@ -1,6 +1,6 @@
 # Changelog
 
-## 4.5.0-dev
+## 4.5.0
 
 ### Visualizer polish
 
@@ -14,9 +14,14 @@
 - reports audio duration, live drift, and track-length difference in the visualizer
 - makes Reset view and replay clearing stop active playback cleanly
 
-## 4.4.0-dev
+### Reports
 
-### Changed
+- adds a dedicated Reports page inside the app
+- lists saved attempt reports by song, attempt, and date
+- lets reports be searched and opened without leaving the app
+- safely serves each existing `report.html` from its own attempt folder
+
+### Cleanup and song tools
 
 - flattened the repository so source files live at the root instead of inside a version-named folder
 - replaced scattered hardcoded versions with the root `VERSION` file and `ril_version.py`
