@@ -66,26 +66,36 @@ def main() -> None:
         rows = v4.press_rows(events, ["a", "s", "k", "l"])
         assert len(rows) == 5
         assert sum(row["role"] == "dodge" for row in rows) == 1
-        visualizer_js = (Path(__file__).parent / "web" / "visualizer.js").read_text(encoding="utf-8")
+
+        web_root = Path(__file__).parent / "web"
+        visualizer_js = (web_root / "visualizer.js").read_text(encoding="utf-8")
+        polish_js = (web_root / "v45-polish.js").read_text(encoding="utf-8")
+        app_js = (web_root / "app.js").read_text(encoding="utf-8")
         assert len(visualizer_js) > 1000
+        assert len(polish_js) > 1000
         for asset in [
             "NOTE_assets.png",
             "noteSplashes.png",
             "HURTNOTE_assets.png",
             "HURTnoteSplashes.png",
         ]:
-            assert (Path(__file__).parent / "web" / "assets" / asset).exists()
-        splash_xml = (Path(__file__).parent / "web" / "assets" / "noteSplashes.xml").read_text(encoding="utf-8")
+            assert (web_root / "assets" / asset).exists()
+        splash_xml = (web_root / "assets" / "noteSplashes.xml").read_text(encoding="utf-8")
         assert splash_xml.count("<SubTexture") == 32
         assert "importReplayFiles" in visualizer_js
         assert "downscrollToggle" in visualizer_js
         assert "ghostTapping" in visualizer_js
         assert "hurtAtlas" in visualizer_js
         assert "matchHazards" in visualizer_js
+        assert "stopVisualizerPlayback" in polish_js
+        assert "preciseSeekInput" in polish_js
+        assert "comboHud" in polish_js
+        assert "live drift" in polish_js
+        assert "/v45-polish.js" in app_js
         assert v4.APP_VERSION == APP_VERSION
 
     print(f"Rhythm Input Lab {APP_VERSION} self-test passed.")
-    print("Importer, replay pairing, versioning, normal/hurt atlases, hazard mapping, and visualizer controls are present.")
+    print("Importer, versioning, hurt hazards, visualizer controls, precise seeking, combo HUD, and audio polish are present.")
 
 
 if __name__ == "__main__":
