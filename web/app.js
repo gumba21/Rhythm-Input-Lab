@@ -12,7 +12,9 @@
 
   const loadVisualizer = () => loadScript('/visualizer.js', () => {
     loadScript('/song-tools.js', () => {
-      loadScript('/v45-polish.js', () => loadScript('/reports.js'));
+      loadScript('/v45-polish.js', () => {
+        loadScript('/reports.js', () => loadScript('/practice.js'));
+      });
     });
   });
 
