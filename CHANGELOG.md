@@ -1,5 +1,20 @@
 # Changelog
 
+## 4.6.0-dev
+
+### Practice update
+
+- adds loopable entire-song, section, custom, weakest-section, and last-miss practice ranges
+- derives FNF section timing from section BPM and step length
+- adds previous/next chart-section navigation
+- adds per-song bookmarks stored locally in the browser
+- adds previous/next reconstructed-miss navigation
+- adds 50%, 75%, 90%, 95%, and 100% practice-speed presets
+- adds live range grades, accuracy, hits, misses, best combo, timing split, and hazard statistics
+- adds basic speed and loop recommendations based on the selected range
+- remembers each song's practice range, loop state, and playback rate
+- displays the selected practice range beneath the visualizer timeline
+
 ## 4.5.0
 
 ### Visualizer polish
