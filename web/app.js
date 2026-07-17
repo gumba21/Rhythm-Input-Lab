@@ -10,7 +10,9 @@
     document.body.appendChild(script);
   };
 
-  const loadVisualizer = () => loadScript('/visualizer.js', () => loadScript('/song-tools.js'));
+  const loadVisualizer = () => loadScript('/visualizer.js', () => {
+    loadScript('/song-tools.js', () => loadScript('/v45-polish.js'));
+  });
 
   fetch('/api/health')
     .then(response => response.json())
