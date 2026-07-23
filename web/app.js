@@ -17,18 +17,22 @@
           loadScript('/v45-polish.js', () => {
             loadScript('/visualizer-preferences.js', () => {
               loadScript('/reports.js', () => {
-                loadScript('/practice.js', () => {
-                  loadScript('/practice-hotfix.js', () => {
-                    loadScript('/practice-tools.js', () => {
-                      loadScript('/practice-comfort.js', () => {
-                        loadScript('/practice-library-menu.js', () => {
-                          loadScript('/practice-save.js', () => {
-                            loadScript('/song-media.js', () => {
-                              loadScript('/analysis.js', () => {
-                                loadScript('/analysis-structure-bridge.js', () => {
-                                  loadScript('/analysis-unified.js', () => {
-                                    loadScript('/song-picker.js', () => {
-                                      loadScript('/ril-packages.js', () => loadScript('/osu-import.js'));
+                loadScript('/practice-polish.js', () => {
+                  loadScript('/practice.js', () => {
+                    loadScript('/practice-hotfix.js', () => {
+                      loadScript('/practice-tools.js', () => {
+                        loadScript('/practice-comfort.js', () => {
+                          loadScript('/practice-library-menu.js', () => {
+                            loadScript('/practice-save.js', () => {
+                              loadScript('/song-media.js', () => {
+                                loadScript('/analysis.js', () => {
+                                  loadScript('/analysis-structure-bridge.js', () => {
+                                    loadScript('/analysis-unified.js', () => {
+                                      loadScript('/song-picker.js', () => {
+                                        loadScript('/ril-packages.js', () => {
+                                          loadScript('/ril-export-polish.js', () => loadScript('/osu-import.js'));
+                                        });
+                                      });
                                     });
                                   });
                                 });
