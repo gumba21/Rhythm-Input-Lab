@@ -28,9 +28,11 @@
                                 loadScript('/analysis.js', () => {
                                   loadScript('/analysis-structure-bridge.js', () => {
                                     loadScript('/analysis-unified.js', () => {
-                                      loadScript('/song-picker.js', () => {
-                                        loadScript('/ril-packages.js', () => {
-                                          loadScript('/ril-export-polish.js', () => loadScript('/osu-import.js'));
+                                      loadScript('/analysis-language-polish.js', () => {
+                                        loadScript('/song-picker.js', () => {
+                                          loadScript('/ril-packages.js', () => {
+                                            loadScript('/ril-export-polish.js', () => loadScript('/osu-import.js'));
+                                          });
                                         });
                                       });
                                     });
