@@ -1,5 +1,33 @@
 # Changelog
 
+## 4.9.1-dev
+
+### Practice count-in and transport polish
+
+- adds a synchronized `3 · 2 · 1 · GO!` count-in to fresh starts, retries, Enter starts, and automatic loop restarts
+- reuses the selected lead-in duration instead of adding a second delay, starts audio at GO, and keeps pause resume immediate
+- allows Escape or the Pause button to cancel an active count-in cleanly
+- fixes the ready-state Resume path that could begin a run without a proper reset
+- adds clear Ready, Count-in, Playing, Paused, Break, and Result states
+- adds result-overlay Retry and Review actions
+- expands keyboard controls with loop toggling, speed stepping, five-second seeking, range-edge jumps, and previous/next timing sections
+
+### Descriptive Practice data
+
+- adds mean offset, timing spread, median absolute offset, hit rate, chart density, FC state, session totals, and local-history totals
+- labels the new area `Descriptive only` and does not prescribe what the player should practice or change
+- shows live source, mapper/difficulty, BPM, osu!mania inherited SV, authored breaks, and audio drift data
+- improves osu!mania subtitles and timing-section labels
+- preserves explicit neutral section start times in compact RIL charts and lazily upgrades older osu!mania neutral documents from saved timing-point metadata
+
+### Sharing and quality-of-life
+
+- adds a Discord `.ril` export target with an exact backend-enforced `8,000,000`-byte limit
+- estimates selected chart/audio/source contents before exporting and removes optional selections in a predictable order when needed
+- keeps an unrestricted Full package target
+- never silently transcodes or lowers audio quality merely to fit the Discord target
+- adds regression tests for explicit neutral timing positions and exact Discord-size enforcement
+
 ## 4.9.0-dev
 
 ### osu!mania adapter
@@ -66,7 +94,7 @@
 - makes Analysis consume the same chart matcher, judgment windows, extra-input rules, hazard penalties, and accuracy calculation used by Visualizer
 - removes the second range-coverage recalculation loop that previously matched and rendered every attempt twice
 - replaces the brute-force 126-pass Analysis offset search with the Visualizer candidate-offset system
-- caches recent reconstructed results so sections, lanes, patterns, coaching, and comparisons reuse one match
+- caches recent reconstructed results so sections, lanes, patterns, classifications, and comparisons reuse one match
 - limits section and lane metrics to the portion of the chart covered by the selected attempt
 - displays the exact Visualizer headline accuracy in Analysis instead of an independently calculated approximation
 - shares saved per-attempt offsets between Visualizer and Analysis
@@ -89,9 +117,9 @@
 
 ## 4.7.0-dev
 
-### Coaching and analysis
+### Performance analysis
 
-- adds a dedicated Analysis page for chart-only structure analysis and reconstructed attempt coaching
+- adds a dedicated Analysis page for chart-only structure analysis and reconstructed attempt measurements
 - automatically aligns recorded inputs against the chart before calculating section, lane, and pattern performance
 - ranks weak chart sections by reconstructed accuracy, misses, timing bias, hold drops, and note count
 - adds per-lane accuracy, miss, timing, and left/right/center hand summaries
