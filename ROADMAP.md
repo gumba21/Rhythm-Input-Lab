@@ -21,7 +21,7 @@
 - cumulative post-attempt accuracy graph
 - global Practice defaults, favorites, recent songs, saved setups, goals, collections, queues, tags, notes, and statistics
 
-### 4.7 — Coaching and analysis
+### 4.7 — Performance analysis
 
 - dedicated Analysis workspace
 - automatic attempt-to-chart alignment
@@ -31,7 +31,7 @@
 - strict pattern detection for jacks, trills, rolls, stairs, streams, bursts, chords, chordstreams, holdstreams, panning, and flams
 - conditional 6K brackets and ringtrills
 - compact pattern shorthand
-- likely miss-cause estimates with uncertainty-aware wording
+- uncertainty-aware likely-cause classifications shown alongside the underlying measurements
 - beginning/middle/ending consistency comparison
 - attempt-to-attempt progress comparison
 - pattern-failure Practice collections
@@ -80,26 +80,33 @@
 - chunked uploads, stale-temp cleanup, archive safety limits, and dedicated adapter fixtures
 - open-source Web osu!mania attribution while retaining an independent Python implementation
 
+### 4.9.1 — Practice and sharing polish
+
+- synchronized `3 · 2 · 1 · GO!` count-ins for fresh starts, retries, Enter starts, and automatic loop restarts
+- existing Practice lead-in reused as the count-in duration without adding a second delay
+- immediate pause resume, cancellable count-ins, corrected ready-state buttons, and clearer Ready/Playing/Paused/Break/Result state labels
+- descriptive run measurements for mean offset, timing spread, median absolute offset, hit rate, note density, FC state, session totals, and local-history totals
+- no automated coach or prescribed action; the user interprets the displayed data
+- result-screen Retry and Review controls plus expanded keyboard navigation for looping, speed, range edges, sections, and paused seeking
+- live osu!mania BPM, inherited SV, mapper/difficulty, and authored break information in Practice
+- explicit neutral section start times preserved through `.ril` charts, with lazy upgrades for existing osu!mania imports
+- improved audio start alignment, track-drift status, and count-in-safe playback
+- Discord `.ril` export target with an exact 8,000,000-byte backend limit
+- optional contents removed to fit rather than silently transcoding or reducing audio quality
+- unrestricted Full package target retained for non-Discord sharing
+- dedicated neutral-timing and Discord-size regression tests
+
 ## Next up
 
-### 4.9.1 — Sharing and osu!mania polish
-
-- hands-on testing with real large `.osz` sets, unusual timing maps, nested audio paths, Unicode filenames, and many selected difficulties
-- improve interrupted/cancelled import recovery and partial-import summaries
-- optional standalone `.osu` companion-audio selection during import
-- show more source metadata and compatibility details in song information
-- add a Discord export target that keeps `.ril` output below 8,000,000 bytes by clearly selecting which existing audio tracks fit
-- never silently transcode or lower audio quality merely to satisfy the Discord size target
-- keep collection/package bundles out of scope so individual songs remain easy to share
-
-### 5.0 — Universal import and conversion boundary
+### 5.0 — Universal adapter and conversion boundary
 
 - Quaver `.qua` import into the neutral RIL model
 - StepMania `.sm` / `.ssc` import into the neutral RIL model
 - source-format capability reports showing preserved, approximated, extension-stored, and unsupported mechanics
 - shared song/audio discovery where each source format supports it
 - adapter contract cleanup so Practice, Visualizer, Analysis, and packages never branch on the source game
-- direct exports to external game formats only after import fidelity and conversion previews are trustworthy
+- conversion previews and external-format exports only after round-trip fidelity is measurable
+- continue adding sortable, inspectable measurements rather than automated coaching instructions
 
 ### 5.5 — Chart reconstruction and Chart Doctor
 
@@ -109,8 +116,9 @@
 - impossible-transition and difficulty-spike detection
 - conversion warnings and mechanic validation
 - chart repair, completion, and difficulty estimation
-- smarter Practice recommendations based on recurring pattern failures
+- expose evidence, confidence, affected ranges, and raw metrics so the user decides what to change
 
 ### 6.0 — Rhythm Lab
 
-- connect Practice, profiles, analysis, reconstruction, conversion, Chart Doctor, and long-term improvement tracking into one complete rhythm-game workspace
+- connect Practice, profiles, analysis, reconstruction, conversion, Chart Doctor, and long-term improvement tracking into one complete local-first rhythm-game workspace
+- provide timelines, comparisons, filters, and drill-down views without replacing the user's judgment
