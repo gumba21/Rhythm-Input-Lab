@@ -129,21 +129,22 @@ def main() -> None:
             name: (web_root / name).read_text(encoding="utf-8")
             for name in [
                 "app.js", "visualizer.js", "global-bridge.js", "shared-results.js",
-                "visualizer-preferences.js", "practice.js", "practice-hotfix.js",
-                "practice-tools.js", "practice-comfort.js", "practice-library-menu.js",
-                "practice-save.js", "song-media.js", "analysis.js",
-                "analysis-structure-bridge.js", "analysis-unified.js", "song-picker.js",
-                "ril-packages.js", "osu-import.js",
+                "visualizer-preferences.js", "practice-polish.js", "practice.js",
+                "practice-hotfix.js", "practice-tools.js", "practice-comfort.js",
+                "practice-library-menu.js", "practice-save.js", "song-media.js",
+                "analysis.js", "analysis-structure-bridge.js", "analysis-unified.js",
+                "song-picker.js", "ril-packages.js", "ril-export-polish.js", "osu-import.js",
             ]
         }
         minimums = {
             "visualizer.js": 1000, "shared-results.js": 5000,
-            "visualizer-preferences.js": 5000, "practice.js": 10000,
-            "practice-hotfix.js": 10000, "practice-tools.js": 10000,
-            "practice-comfort.js": 20000, "practice-library-menu.js": 4000,
-            "practice-save.js": 3000, "song-media.js": 10000,
-            "analysis.js": 30000, "analysis-unified.js": 15000,
-            "song-picker.js": 10000, "ril-packages.js": 20000,
+            "visualizer-preferences.js": 5000, "practice-polish.js": 20000,
+            "practice.js": 10000, "practice-hotfix.js": 10000,
+            "practice-tools.js": 10000, "practice-comfort.js": 20000,
+            "practice-library-menu.js": 4000, "practice-save.js": 3000,
+            "song-media.js": 10000, "analysis.js": 30000,
+            "analysis-unified.js": 15000, "song-picker.js": 10000,
+            "ril-packages.js": 20000, "ril-export-polish.js": 5000,
             "osu-import.js": 15000,
         }
         for name, minimum in minimums.items():
@@ -163,6 +164,9 @@ def main() -> None:
         assert "window.matchChart = matchChart" in scripts["global-bridge.js"]
         assert "exactStats" in scripts["shared-results.js"]
         assert "ril-visualizer-preferences:v1" in scripts["visualizer-preferences.js"]
+        assert "practiceCountdownOverlay" in scripts["practice-polish.js"]
+        assert "Descriptive only" in scripts["practice-polish.js"]
+        assert "Timing spread" in scripts["practice-polish.js"]
         assert "window.rilPracticeEngine" in scripts["practice.js"]
         assert "practicePrecisionSelector" in scripts["practice-tools.js"]
         assert "ril-practice-comfort:v1" in scripts["practice-comfort.js"]
@@ -172,13 +176,16 @@ def main() -> None:
         assert "rilSharedResults.compute" in scripts["analysis-unified.js"]
         assert "songPickerModal" in scripts["song-picker.js"]
         assert "/api/ril/export" in scripts["ril-packages.js"]
+        assert "8_000_000" not in scripts["ril-export-polish.js"]
+        assert "8,000,000-byte limit" in scripts["ril-export-polish.js"]
         assert "/api/osu/import/chunk" in scripts["osu-import.js"]
         assert "Import osu!mania" in scripts["osu-import.js"]
         for script in [
             "/global-bridge.js", "/shared-results.js", "/visualizer-preferences.js",
-            "/practice-comfort.js", "/practice-library-menu.js", "/practice-save.js",
-            "/song-media.js", "/analysis.js", "/analysis-structure-bridge.js",
-            "/analysis-unified.js", "/song-picker.js", "/ril-packages.js", "/osu-import.js",
+            "/practice-polish.js", "/practice-comfort.js", "/practice-library-menu.js",
+            "/practice-save.js", "/song-media.js", "/analysis.js",
+            "/analysis-structure-bridge.js", "/analysis-unified.js", "/song-picker.js",
+            "/ril-packages.js", "/ril-export-polish.js", "/osu-import.js",
         ]:
             assert script in scripts["app.js"]
 
@@ -187,11 +194,13 @@ def main() -> None:
         assert getattr(v4._backend.Handler, "_ril_practice_attempt_installed", False)
         assert getattr(v4._backend.Handler, "_ril_package_installed", False)
         assert getattr(v4._backend.Handler, "_ril_osu_import_installed", False)
+        assert getattr(v4._backend.Handler, "_ril_discord_export_installed", False)
+        assert getattr(ril_package_backend, "_neutral_chart_polish_installed", False)
         assert v4.APP_VERSION == APP_VERSION
-        assert APP_VERSION == "4.9.0-dev"
+        assert APP_VERSION == "4.9.1-dev"
 
     print(f"Rhythm Input Lab {APP_VERSION} self-test passed.")
-    print("Shared results, portable RIL packages, and osu!mania importing are present.")
+    print("Practice count-ins, descriptive run data, Discord-sized packages, and osu!mania importing are present.")
 
 
 if __name__ == "__main__":
