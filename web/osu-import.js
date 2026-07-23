@@ -57,7 +57,15 @@
         </label>
         <div id="osuImportPreview" class="osu-preview empty">Choose an osu!mania beatmap to inspect its difficulties, timing points, holds, audio, and compatibility.</div>
       </div>`;
-    legacyGrid.before(panel);
+    const rilPanel = q("#rilImportPanel");
+    (rilPanel || legacyGrid).before(panel);
+    const head = q("#view-import .page-head");
+    if (head) {
+      const eyebrow = q(".eyebrow", head);
+      const description = q("p", head);
+      if (eyebrow) eyebrow.textContent = "Universal importer";
+      if (description) description.textContent = "Import osu!mania beatmaps, portable RIL songs, or legacy/Psych FNF charts into one shared library.";
+    }
     const input = q("#osuSourceFile");
     input.addEventListener("change", event => event.target.files?.[0] && selectSource(event.target.files[0]));
     const zone = q("#osuDropzone");
