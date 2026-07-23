@@ -99,12 +99,14 @@ def main() -> None:
             archive.writestr("maps/Gold Mine [Hard].osu", chart("Hard"))
             archive.writestr("maps/Gold Mine [Insane].osu", chart("Insane"))
             archive.writestr("maps/not-mania.osu", chart("Standard", mode=0))
-            archive.writestr("song.ogg", b"OggS" + b"audio" * 100)
+            archive.writestr("maps/song.ogg", b"OggS" + b"audio" * 100)
+            archive.writestr("other/song.ogg", b"OggS" + b"wrong" * 100)
         preview = osu_importer.inspect_source(package)
         assert preview["kind"] == "osz"
         assert len(preview["difficulties"]) == 2
         assert len(preview["unsupported"]) == 1
         assert all(row["has_audio"] for row in preview["difficulties"])
+        assert all(row["audio_entry"] == "maps/song.ogg" for row in preview["difficulties"])
         assert {row["version"] for row in preview["difficulties"]} == {"Hard", "Insane"}
         assert all(len(row["id"]) == 20 for row in preview["difficulties"])
 
