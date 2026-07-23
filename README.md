@@ -23,13 +23,30 @@ The server binds only to `127.0.0.1`. Charts, recordings, locally attached audio
 - chart-only, replay-only, and chart/replay comparison views
 - automatic/manual replay alignment with one cached result shared by Visualizer and Analysis
 - configurable Sick, Good, Bad, Shit, miss, safe-frame, ghost-tapping, hold, and hazard behavior
-- playable 4K–9K Practice with audio, speed controls, precise ranges, looping, holds, hazards, saved setups, goals, collections, history, and full-song attempt saving
-- coaching analysis for weak sections, lanes, timing, consistency, strict rhythm patterns, likely miss causes, and attempt comparison
+- playable 4K–9K Practice with synchronized count-ins, audio, speed controls, precise ranges, looping, holds, hazards, saved setups, goals, collections, history, and full-song attempt saving
+- descriptive performance analysis for sections, lanes, timing, consistency, strict rhythm patterns, likely miss causes, and attempt comparison
+- descriptive Practice run data including mean offset, timing spread, median absolute offset, hit rate, chart density, FC state, session totals, and local-history totals
 - saved per-song instrumental and vocals playback with byte-range seeking
 - portable `.ril` song packages containing the compact neutral chart, mechanic mappings, metadata, sharing username, and optional instrumental/vocals audio
 - verified `.ril` import preview, SHA-256 integrity checks, duplicate handling, provenance, and immediate Practice/Visualizer access
+- Discord export target with an exact 8,000,000-byte package limit and a separate unrestricted full-package target
 
-Reconstructed judgments are estimates derived from physical input. Rhythm Input Lab does not claim that its configured judgments reproduce an imported game's official score calculation.
+Reconstructed judgments are estimates derived from physical input. Rhythm Input Lab presents measurements and classifications for the user to interpret; it does not act as an automated coach or claim that configured judgments reproduce an imported game's official scoring.
+
+## Practice controls
+
+Practice displays a synchronized `3 · 2 · 1 · GO!` count-in on fresh starts, retries, and loop restarts. Resuming a paused run remains immediate.
+
+Common shortcuts:
+
+- `Enter`: start a run
+- `P` or `Escape`: pause/resume; Escape also cancels an active count-in
+- `R`: retry
+- `L`: toggle looping when L is not a bound lane key
+- `-` / `+`: step through Practice speed presets
+- `[` / `]`: seek one second while paused; hold Shift for five seconds
+- `Home` / `End`: jump to the selected range edges
+- `,` / `.`: previous/next timing section
 
 ## Import osu!mania
 
@@ -46,6 +63,8 @@ The adapter preserves source timing and metadata as neutral chart data and sourc
 
 Open a song in the library and choose **Export .ril** to create one compressed file that can be sent to another Rhythm Input Lab user. Attempts and personal statistics are excluded. The recipient can import the package from the Import page, inspect its metadata and audio contents, then play it immediately.
 
+The default Discord target estimates the selected contents and refuses the finished export when it exceeds exactly 8,000,000 bytes. It removes optional selections rather than silently transcoding or lowering audio quality. The Full package target keeps the normal package limits.
+
 The package and compact neutral chart specification is documented in [`RIL_FORMAT.md`](RIL_FORMAT.md).
 
 ## Project files
@@ -60,9 +79,11 @@ The package and compact neutral chart specification is documented in [`RIL_FORMA
 ├── osu_import_backend.py        chunked osu!mania preview/import backend
 ├── osu_importer_self_test.py    osu!mania parser and archive safety tests
 ├── ril_package_backend.py       neutral RIL chart and portable package backend
-├── ril_package_self_test.py     RIL round-trip and archive safety tests
-├── OSU_IMPORT.md                osu!mania import behavior and limitations
+├── discord_export_backend.py    exact Discord package-size enforcement
+├── neutral_chart_polish.py      explicit neutral timing-section positions
+├── practice_polish_self_test.py Practice polish and Discord export tests
 ├── RIL_FORMAT.md                portable package and compact chart specification
+├── OSU_IMPORT.md                osu!mania import behavior and limitations
 ├── THIRD_PARTY_NOTICES.md       source references, licenses, and attribution
 ├── self_test.py                 application smoke tests
 ├── VERSION                      single application version source
