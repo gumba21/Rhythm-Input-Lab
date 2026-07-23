@@ -1,5 +1,34 @@
 # Changelog
 
+## 4.8.0-dev
+
+### Portable playable RIL packages
+
+- exports any charted song as one compressed `.ril` file containing the compact neutral chart, mechanic mappings, metadata, and optional saved instrumental/vocals audio
+- preserves supplied OGG, MP3, WAV, FLAC, M4A, AAC, OPUS, and WEBM audio without automatic transcoding or quality loss
+- adds a local sharing username used for `Shared by` and `Imported from` provenance while keeping the exporter separate from the original charter
+- adds an import preview that verifies the package, shows title, key mode, BPM, duration, note count, source format, audio contents, sharing username, package size, and compatibility warnings before writing anything
+- handles duplicate titles by importing a separate copy, replacing the chart and included media while preserving attempts, or filling only missing audio
+- adds Export `.ril` to song details and immediate Practice/Visualizer actions after importing
+- adds a Recently imported dashboard section with provenance and quick Practice/Visualizer buttons
+- keeps artwork, attempts, personal statistics, executable scripts, and online accounts outside package version 1
+
+### Compact neutral chart foundation
+
+- defines RIL chart version 1 with dictionary-compressed note types, event names, and event sources plus positional note, event, and section rows
+- separates player/opponent ownership, holds, hazards, sections, BPM data, mappings, metadata, and source extensions from FNF-specific JSON layout
+- expands compact RIL documents into the same runtime bundle consumed by Visualizer, Practice, and Analysis
+- lazily creates `chart/ril_chart.json` for existing FNF imports and makes new FNF imports immediately portable
+- preserves unknown note types, custom events, extra note data, raw event payloads, source format, and editable mechanic mappings
+- documents the archive, manifest, compact row layout, conflict behavior, and safety limits in `RIL_FORMAT.md`
+
+### Package safety and validation
+
+- verifies SHA-256 hashes and declared sizes for every packaged chart/audio/source payload
+- rejects path traversal, Windows-style archive paths, encrypted entries, symbolic links, unsupported files, unsafe audio types, excessive file counts, oversized charts, and archive expansion beyond configured limits
+- uploads imports in chunks, streams finished exports as downloads, and cleans temporary packages after expiration
+- adds compact-chart round-trip, packaged-audio, manifest, integrity, archive-layout, and unsafe-path tests
+
 ## 4.7.1-dev
 
 ### Shared results and Analysis performance
