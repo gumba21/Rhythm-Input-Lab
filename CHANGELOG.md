@@ -1,5 +1,35 @@
 # Changelog
 
+## 4.9.0-dev
+
+### osu!mania adapter
+
+- imports standalone `.osu` charts and multi-difficulty `.osz` beatmap sets through a dedicated local preview
+- accepts supported osu!mania 4K–9K difficulties while clearly listing non-mania, malformed, and unsupported-key charts that were skipped
+- lets any combination of difficulties be selected before import and stores each difficulty as its own song entry
+- preserves taps, holds, authored hold endpoints, lane columns, mapper, difficulty, Unicode/fallback title and artist, preview time, beatmap IDs, and source hashes
+- converts uninherited timing points into BPM sections/events and inherited timing points into neutral scroll-velocity events
+- preserves timing-point meter, samples, volume, effects, raw beat lengths, hit sounds, object parameters, hit samples, and source row indexes as source extensions
+- imports break periods as presentation events
+
+### Beatmap-set audio and library integration
+
+- finds `.osz` audio relative to each chart, by exact archive path, or by an unambiguous basename fallback
+- copies supported OGG, MP3, WAV, FLAC, M4A, AAC, OPUS, and WEBM audio into the normal per-song instrumental slot without transcoding
+- uses hard links when several selected difficulties share the same audio and safely falls back to normal copies
+- marks imported songs with osu!mania provenance, mapper credit, source package/chart names, and beatmap identifiers
+- routes every imported chart through the neutral RIL model so Practice, Visualizer, Analysis, full-song attempts, collections, saved audio, and `.ril` export work immediately
+- offers separate-copy or replace-matching-chart behavior while preserving existing attempt folders
+- adds immediate Practice and Visualizer actions after import and osu!mania badges in the song library
+
+### Import safety and testing
+
+- uploads large `.osu`/`.osz` sources in chunks with cancellation, stale-temp cleanup, and a 2 GB upload limit
+- rejects unsafe archive paths, encrypted entries, symbolic links, excessive entry counts, oversized expanded archives, and oversized chart text
+- adds synthetic tap/hold/lane/timing/SV/break fixtures, multi-difficulty `.osz` coverage, automatic audio discovery, non-mania and unsupported-key rejection, and unsafe-path tests
+- credits the MIT-licensed Web osu!mania project as an implementation reference while keeping Rhythm Input Lab's parser independent
+- documents supported data, duplicate behavior, audio discovery, safety limits, and current compatibility boundaries in `OSU_IMPORT.md`
+
 ## 4.8.0-dev
 
 ### Portable playable RIL packages
