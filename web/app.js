@@ -11,8 +11,36 @@
   };
 
   const loadVisualizer = () => loadScript('/visualizer.js', () => {
-    loadScript('/song-tools.js', () => {
-      loadScript('/v45-polish.js', () => loadScript('/reports.js'));
+    loadScript('/global-bridge.js', () => {
+      loadScript('/shared-results.js', () => {
+        loadScript('/song-tools.js', () => {
+          loadScript('/v45-polish.js', () => {
+            loadScript('/visualizer-preferences.js', () => {
+              loadScript('/reports.js', () => {
+                loadScript('/practice.js', () => {
+                  loadScript('/practice-hotfix.js', () => {
+                    loadScript('/practice-tools.js', () => {
+                      loadScript('/practice-comfort.js', () => {
+                        loadScript('/practice-library-menu.js', () => {
+                          loadScript('/practice-save.js', () => {
+                            loadScript('/song-media.js', () => {
+                              loadScript('/analysis.js', () => {
+                                loadScript('/analysis-structure-bridge.js', () => {
+                                  loadScript('/analysis-unified.js', () => loadScript('/song-picker.js'));
+                                });
+                              });
+                            });
+                          });
+                        });
+                      });
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
     });
   });
 
