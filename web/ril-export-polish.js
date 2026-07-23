@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const LIMIT = 8_000_000;
+  const LIMIT = 8000000;
   const STORAGE_KEY = "ril-export-target:v1";
   const runtime = { folder: null, target: localStorage.getItem(STORAGE_KEY) || "discord", nextDiscordExport: false };
   const q = (selector, root = document) => root.querySelector(selector);
