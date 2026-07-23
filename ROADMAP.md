@@ -65,46 +65,51 @@
 - archive path, file type, size, file count, encryption, symlink, and SHA-256 integrity protections
 - package/compact-chart round-trip fixtures and format documentation
 
+### 4.9 — osu!mania import
+
+- standalone `.osu` and multi-difficulty `.osz` importing
+- selectable supported 4K–9K difficulties with clear skipped-chart reporting
+- tap and hold notes with exact lane and hold-end conversion
+- uninherited timing points, BPM changes, inherited scroll velocities, meters, breaks, samples, volumes, effects, and source extensions
+- Unicode/fallback song metadata, mapper credit, difficulty names, preview time, and beatmap identifiers
+- automatic `.osz` audio discovery relative to the chart, by exact path, or by unambiguous filename
+- lossless saved-audio import with shared-audio hard links where supported
+- neutral RIL documents created immediately for every imported difficulty
+- immediate Practice, Visualizer, Analysis, collections, attempts, saved media, and portable `.ril` export
+- separate-copy and replace-matching-chart modes that preserve attempt folders
+- chunked uploads, stale-temp cleanup, archive safety limits, and dedicated adapter fixtures
+- open-source Web osu!mania attribution while retaining an independent Python implementation
+
 ## Next up
 
-### 4.8.1 — Package stabilization and adapter boundary
+### 4.9.1 — Sharing and osu!mania polish
 
-- hands-on stress testing with long charts and large instrumental/vocals files
-- strengthen interrupted upload, cancelled import, expired download, and low-disk-space behavior
-- package history and clearer replacement/merge summaries
-- finalize the importer-adapter contract around the neutral RIL runtime model
-- reduce remaining FNF-shaped assumptions in shared chart metadata and event handling
-- migrate old chart folders lazily without rewriting or deleting original source files
-- performance checks for large libraries containing many imported packages
+- hands-on testing with real large `.osz` sets, unusual timing maps, nested audio paths, Unicode filenames, and many selected difficulties
+- improve interrupted/cancelled import recovery and partial-import summaries
+- optional standalone `.osu` companion-audio selection during import
+- show more source metadata and compatibility details in song information
+- add a Discord export target that keeps `.ril` output below 8,000,000 bytes by clearly selecting which existing audio tracks fit
+- never silently transcode or lower audio quality merely to satisfy the Discord size target
+- keep collection/package bundles out of scope so individual songs remain easy to share
 
-### 4.9 — First external format imports
+### 5.0 — Universal import and conversion boundary
 
-- osu!mania import into the neutral RIL model
-- Quaver import into the neutral RIL model
+- Quaver `.qua` import into the neutral RIL model
 - StepMania `.sm` / `.ssc` import into the neutral RIL model
-- source-format capability reports showing what was preserved, approximated, stored as an extension, or unsupported
+- source-format capability reports showing preserved, approximated, extension-stored, and unsupported mechanics
 - shared song/audio discovery where each source format supports it
-- route imported charts through the same Practice, Visualizer, Analysis, collections, packages, and reporting systems
-- keep direct export into those external formats for a later conversion-focused update
+- adapter contract cleanup so Practice, Visualizer, Analysis, and packages never branch on the source game
+- direct exports to external game formats only after import fidelity and conversion previews are trustworthy
 
-### 5.0 — Universal rhythm engine
+### 5.5 — Chart reconstruction and Chart Doctor
 
-- public stable RIL interchange format
-- FNF, osu!mania, Quaver, StepMania, Clone Hero, and RIL conversion pipeline
-- export back into supported game/chart formats with a preview before writing
 - turn recorded attempts into draft charts
-- combine multiple chartless attempts to reconstruct a higher-confidence chart
-- preserve holds, hazards, labels, events, lanes, timing, metadata, and source extensions wherever possible
-- route every supported format through the same Practice, Analysis, collection, package, and reporting systems
-
-## Later
-
-### 5.5 — Chart Doctor
-
+- combine multiple chartless attempts into a higher-confidence reconstruction
 - timing and audio validation
 - impossible-transition and difficulty-spike detection
 - conversion warnings and mechanic validation
 - chart repair, completion, and difficulty estimation
+- smarter Practice recommendations based on recurring pattern failures
 
 ### 6.0 — Rhythm Lab
 
