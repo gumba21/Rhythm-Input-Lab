@@ -78,7 +78,22 @@ Timing information becomes neutral data and explicit events:
 - `osu! SV change`
 - `osu! Break`
 
+Uninherited timing points also become neutral sections with their exact authored `time_ms`. Compact RIL chart version 1 stores this as an optional sixth section-row field. Existing imported charts that predate the field are upgraded lazily from their preserved timing-point metadata.
+
 The original `.osu` chart is preserved beside the normalized files. A compact `ril_chart.json` is generated immediately, so the imported chart can be exported as a portable `.ril` song without returning to osu!-specific code.
+
+## Practice presentation
+
+Practice uses the same input and judgment engine for every source format. For osu!mania charts it additionally displays:
+
+- mapper and difficulty
+- active BPM
+- active inherited SV multiplier
+- authored break state and remaining break duration
+- saved-audio readiness and live instrumental/vocals drift
+- exact timing-point section ranges in the section picker
+
+A fresh start, retry, or loop restart uses the same synchronized `3 · 2 · 1 · GO!` count-in as FNF and portable RIL charts. These displays expose source data; they do not reproduce osu!'s official scoring or prescribe a training plan.
 
 ## Duplicate behavior
 
@@ -94,7 +109,7 @@ Each difficulty includes its version name in the display name, so different diff
 - Modes other than osu!mania are skipped.
 - Key modes outside 4K–9K are skipped because the current Practice and input-profile systems support 4K–9K.
 - Storyboards, backgrounds, videos, skins, samples, and osu!-specific visual presentation are not imported.
-- Inherited timing points are preserved as neutral scroll-velocity events; current Practice rendering does not yet reproduce every osu!mania scroll behavior exactly.
+- Inherited timing points are preserved and displayed as neutral scroll-velocity data; current Practice rendering does not yet reproduce every osu!mania scroll behavior exactly.
 - Rhythm Input Lab uses its own configurable judgment windows and does not claim official osu! score parity.
 - Beatmap ownership and audio-sharing rights are not changed by importing or exporting a chart.
 
