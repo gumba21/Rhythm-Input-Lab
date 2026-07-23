@@ -26,7 +26,9 @@
                             loadScript('/song-media.js', () => {
                               loadScript('/analysis.js', () => {
                                 loadScript('/analysis-structure-bridge.js', () => {
-                                  loadScript('/analysis-unified.js', () => loadScript('/song-picker.js'));
+                                  loadScript('/analysis-unified.js', () => {
+                                    loadScript('/song-picker.js', () => loadScript('/ril-packages.js'));
+                                  });
                                 });
                               });
                             });
