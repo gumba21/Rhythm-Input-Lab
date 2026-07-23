@@ -50,36 +50,52 @@
 - Practice library moved into a tabbed menu
 - persistent Visualizer layout, playback, audio, display, and per-attempt offset settings
 
-## Next up: fast route to the universal engine
+### 4.8 — Portable RIL foundation
 
-### 4.8 — Universal foundation
+- one shareable `.ril` package containing a compact neutral chart, mechanic mappings, metadata, and optional instrumental/vocals audio
+- local sharing username with `Shared by` / `Imported from` provenance kept separate from original charter credit
+- verified package preview before import, including hashes, size, compatibility, source format, chart details, audio contents, and warnings
+- duplicate handling through separate-copy, chart/media replacement, or missing-audio merge modes
+- immediate Practice and Visualizer access after import
+- Recently imported dashboard cards and provenance labels throughout the song library
+- dictionary-compressed note/event vocabulary and positional note, event, and section rows
+- neutral runtime expansion shared by Visualizer, Practice, and Analysis
+- lazy `ril_chart.json` generation for existing FNF imports and automatic neutral documents for new imports
+- source extensions, custom note types, custom events, extra note data, and editable mappings preserved without executable package code
+- archive path, file type, size, file count, encryption, symlink, and SHA-256 integrity protections
+- package/compact-chart round-trip fixtures and format documentation
 
-- define a versioned neutral RIL chart document
-- separate timing, notes, holds, hazards, events, scroll behavior, metadata, and source-specific extensions
-- capability flags and explicit unsupported-mechanic warnings
-- importer adapter interface instead of format-specific logic leaking into Practice and Analysis
-- normalization tests and round-trip fixtures
-- move FNF through the same adapter used by future formats
-- make Practice, Visualizer, and Analysis consume the neutral model only
+## Next up
 
-### 4.9 — First external formats
+### 4.8.1 — Package stabilization and adapter boundary
 
-- osu!mania import and export
-- Quaver import and export
-- StepMania `.sm` / `.ssc` import and export
-- format comparison reports showing preserved, approximated, and omitted mechanics
-- shared song/audio discovery where each format supports it
-- converter preview before writing files
+- hands-on stress testing with long charts and large instrumental/vocals files
+- strengthen interrupted upload, cancelled import, expired download, and low-disk-space behavior
+- package history and clearer replacement/merge summaries
+- finalize the importer-adapter contract around the neutral RIL runtime model
+- reduce remaining FNF-shaped assumptions in shared chart metadata and event handling
+- migrate old chart folders lazily without rewriting or deleting original source files
+- performance checks for large libraries containing many imported packages
+
+### 4.9 — First external format imports
+
+- osu!mania import into the neutral RIL model
+- Quaver import into the neutral RIL model
+- StepMania `.sm` / `.ssc` import into the neutral RIL model
+- source-format capability reports showing what was preserved, approximated, stored as an extension, or unsupported
+- shared song/audio discovery where each source format supports it
+- route imported charts through the same Practice, Visualizer, Analysis, collections, packages, and reporting systems
+- keep direct export into those external formats for a later conversion-focused update
 
 ### 5.0 — Universal rhythm engine
 
-- public RIL interchange format
+- public stable RIL interchange format
 - FNF, osu!mania, Quaver, StepMania, Clone Hero, and RIL conversion pipeline
-- export back into FNF-compatible charts
+- export back into supported game/chart formats with a preview before writing
 - turn recorded attempts into draft charts
 - combine multiple chartless attempts to reconstruct a higher-confidence chart
 - preserve holds, hazards, labels, events, lanes, timing, metadata, and source extensions wherever possible
-- route every supported format through the same Practice, Analysis, collection, and reporting systems
+- route every supported format through the same Practice, Analysis, collection, package, and reporting systems
 
 ## Later
 
