@@ -76,7 +76,11 @@ def _upload_chunk(payload: dict[str, Any]) -> dict[str, Any]:
         upload_dir.mkdir(parents=True, exist_ok=True)
         (upload_dir / "filename.txt").write_text(filename, encoding="utf-8")
         (upload_dir / f"{index:06d}.part").write_bytes(raw)
-        received = len(list(upload_dir.glob("*.part")))
+        parts = list(upload_dir.glob("*.part"))
+        if sum(part.stat().st_size for part in parts) > _MAX_UPLOAD_BYTES:
+            shutil.rmtree(upload_dir, ignore_errors=True)
+            raise ValueError("The osu! source exceeds the 2 GB safety limit")
+        received = len(parts)
         result: dict[str, Any] = {"upload_id": upload_id, "received": received, "total": total, "complete": False}
         if received != total:
             return result
