@@ -9,6 +9,7 @@ import fnf_importer
 import media_backend
 import practice_attempt_backend
 import rhythm_input_lab_core as core
+import ril_package_backend
 from asset_backend import load_packaged_note_atlas
 from ril_version import APP_VERSION
 
@@ -84,6 +85,12 @@ def main() -> None:
         media_backend._clear_kind(media_song, "instrumental")
         assert not media_backend._media_meta(media_song)
 
+        compact = ril_package_backend.bundle_to_compact_chart(bundle)
+        expanded = ril_package_backend.compact_chart_to_bundle(compact)
+        assert compact["v"] == 1
+        assert expanded["summary"]["format"] == "ril_neutral"
+        assert expanded["summary"]["player_notes"] == 5
+
         web_root = Path(__file__).parent / "web"
         visualizer_js = (web_root / "visualizer.js").read_text(encoding="utf-8")
         bridge_js = (web_root / "global-bridge.js").read_text(encoding="utf-8")
@@ -101,9 +108,11 @@ def main() -> None:
         song_picker_js = (web_root / "song-picker.js").read_text(encoding="utf-8")
         analysis_js = (web_root / "analysis.js").read_text(encoding="utf-8")
         analysis_unified_js = (web_root / "analysis-unified.js").read_text(encoding="utf-8")
+        ril_packages_js = (web_root / "ril-packages.js").read_text(encoding="utf-8")
         app_js = (web_root / "app.js").read_text(encoding="utf-8")
         media_backend_source = Path(media_backend.__file__).read_text(encoding="utf-8")
         practice_backend_source = Path(practice_attempt_backend.__file__).read_text(encoding="utf-8")
+        package_backend_source = Path(ril_package_backend.__file__).read_text(encoding="utf-8")
 
         assert len(visualizer_js) > 1000
         assert len(bridge_js) > 300
@@ -121,6 +130,7 @@ def main() -> None:
         assert len(song_picker_js) > 10000
         assert len(analysis_js) > 30000
         assert len(analysis_unified_js) > 15000
+        assert len(ril_packages_js) > 20000
 
         for asset in ["NOTE_assets.xml", "noteSplashes.png", "HURTNOTE_assets.png", "HURTnoteSplashes.png"]:
             assert (web_root / "assets" / asset).exists()
@@ -220,21 +230,33 @@ def main() -> None:
         assert "rilSharedResults.compute" in analysis_unified_js
         assert "Calculating one shared result" in analysis_unified_js
 
+        assert "Import a .ril package" in ril_packages_js
+        assert "/api/ril/import/chunk" in ril_packages_js
+        assert "/api/ril/export" in ril_packages_js
+        assert "Recently imported" in ril_packages_js
+        assert "Imported from" in ril_packages_js
+        assert "bundle_to_compact_chart" in package_backend_source
+        assert "compact_chart_to_bundle" in package_backend_source
+        assert "SHA-256" not in package_backend_source or "sha256" in package_backend_source
+        assert "../" not in package_backend_source or "unsafe path" in package_backend_source
+
         for script in [
             "/global-bridge.js", "/shared-results.js", "/visualizer-preferences.js",
             "/practice-comfort.js", "/practice-library-menu.js", "/practice-save.js",
-            "/song-media.js", "/analysis.js", "/analysis-unified.js", "/song-picker.js",
+            "/song-media.js", "/analysis.js", "/analysis-structure-bridge.js",
+            "/analysis-unified.js", "/song-picker.js", "/ril-packages.js",
         ]:
             assert script in app_js
         assert "/analysis-coverage.js" not in app_js
         assert getattr(v4._backend.Handler, "_ril_note_atlas_endpoint_installed", False)
         assert getattr(v4._backend.Handler, "_ril_song_media_installed", False)
         assert getattr(v4._backend.Handler, "_ril_practice_attempt_installed", False)
+        assert getattr(v4._backend.Handler, "_ril_package_installed", False)
         assert v4.APP_VERSION == APP_VERSION
-        assert APP_VERSION == "4.7.1-dev"
+        assert APP_VERSION == "4.8.0-dev"
 
     print(f"Rhythm Input Lab {APP_VERSION} self-test passed.")
-    print("Visualizer and Analysis share results, full-song Practice runs save, and large libraries stay contained.")
+    print("Shared results, full-song Practice saves, and portable playable RIL packages are present.")
 
 
 if __name__ == "__main__":
