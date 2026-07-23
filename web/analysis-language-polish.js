@@ -3,6 +3,7 @@
 (() => {
   const q = (selector, root = document) => root.querySelector(selector);
   let applying = false;
+  let queued = false;
 
   const replacements = new Map([
     ["4.7 coaching and analysis", "4.7 performance analysis"],
@@ -12,6 +13,10 @@
     ["No dominant failure cause", "No dominant classification"],
     ["lane coaching", "lane summaries"],
   ]);
+
+  function setText(node, value) {
+    if (node && node.textContent !== value) node.textContent = value;
+  }
 
   function replaceText(root) {
     if (!root) return;
@@ -29,21 +34,16 @@
     const view = q("#view-analysis");
     if (!view) return false;
     const heading = q(".page-head", view);
-    const eyebrow = q(".eyebrow", heading);
-    const description = q("p", heading);
-    if (eyebrow) eyebrow.textContent = "4.7 performance analysis";
-    if (description) description.textContent = "Inspect section, lane, timing, pattern, consistency, and classification data. The measurements are presented for you to interpret.";
+    setText(q(".eyebrow", heading), "4.7 performance analysis");
+    setText(q("p", heading), "Inspect section, lane, timing, pattern, consistency, and classification data. The measurements are presented for you to interpret.");
 
-    const coachCard = q("#analysisCoach")?.closest("article");
-    if (coachCard) {
-      const label = q(".eyebrow", coachCard);
-      const title = q("h2", coachCard);
-      if (label) label.textContent = "Summary";
-      if (title) title.textContent = "Lowest reconstructed results";
+    const summaryCard = q("#analysisCoach")?.closest("article");
+    if (summaryCard) {
+      setText(q(".eyebrow", summaryCard), "Summary");
+      setText(q("h2", summaryCard), "Lowest reconstructed results");
     }
 
-    const handSettings = q("#analysisHandSettings .list-sub");
-    if (handSettings) handSettings.textContent = "These mappings affect one-hand pattern labels and lane summaries; they do not change your keybinds.";
+    setText(q("#analysisHandSettings .list-sub"), "These mappings affect one-hand pattern labels and lane summaries; they do not change your keybinds.");
 
     if (!q("#analysisInterpretationNote", view)) {
       const note = document.createElement("div");
@@ -57,13 +57,12 @@
   }
 
   function patchDynamicCopy() {
-    const coach = q("#analysisCoach");
-    replaceText(coach);
-    const causes = q("#analysisCauses");
-    replaceText(causes);
+    replaceText(q("#analysisCoach"));
+    replaceText(q("#analysisCauses"));
   }
 
   function apply() {
+    queued = false;
     if (applying) return;
     applying = true;
     try {
@@ -74,6 +73,12 @@
     }
   }
 
+  function schedule() {
+    if (queued) return;
+    queued = true;
+    queueMicrotask(apply);
+  }
+
   const style = document.createElement("style");
   style.id = "analysisLanguagePolishStyles";
   style.textContent = `
@@ -82,7 +87,7 @@
   `;
   document.head.appendChild(style);
 
-  const observer = new MutationObserver(() => queueMicrotask(apply));
+  const observer = new MutationObserver(schedule);
   observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
   apply();
   setTimeout(apply, 0);
