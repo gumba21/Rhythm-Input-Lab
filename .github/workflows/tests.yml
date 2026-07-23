@@ -14,8 +14,17 @@ jobs:
         with:
           python-version: "3.12"
       - name: Compile Python
-        run: python -m py_compile app.py backend.py console.py rhythm_input_lab_core.py fnf_importer.py self_test.py ril_version.py
+        run: python -m py_compile app.py asset_backend.py backend.py console.py rhythm_input_lab_core.py fnf_importer.py media_backend.py practice_attempt_backend.py reports_backend.py ril_package_backend.py ril_package_self_test.py self_test.py ril_version.py
       - name: Check JavaScript syntax
-        run: node --check web/app.js && node --check web/visualizer.js
-      - name: Run self-test
-        run: python self_test.py
+        run: node --check web/app.js && node --check web/visualizer.js && node --check web/global-bridge.js && node --check web/shared-results.js && node --check web/visualizer-preferences.js && node --check web/practice.js && node --check web/practice-hotfix.js && node --check web/practice-tools.js && node --check web/practice-comfort.js && node --check web/practice-library-menu.js && node --check web/practice-save.js && node --check web/song-media.js && node --check web/analysis.js && node --check web/analysis-structure-bridge.js && node --check web/analysis-unified.js && node --check web/song-picker.js && node --check web/ril-packages.js
+      - name: Run self-tests
+        run: |
+          python self_test.py > self-test.log 2>&1
+          python ril_package_self_test.py >> self-test.log 2>&1
+      - name: Upload self-test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: self-test-log
+          path: self-test.log
+          if-no-files-found: ignore
