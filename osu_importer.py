@@ -127,11 +127,20 @@ def validate_osz(path: Path) -> dict[str, zipfile.ZipInfo]:
         return names
 
 
-def find_archive_entry(names: dict[str, zipfile.ZipInfo], requested: str) -> zipfile.ZipInfo | None:
-    normalized = requested.replace("\\", "/").removeprefix("./").strip().casefold()
-    if normalized in names:
-        return names[normalized]
-    requested_base = PurePosixPath(normalized).name
+def find_archive_entry(
+    names: dict[str, zipfile.ZipInfo], requested: str, relative_to: str = ""
+) -> zipfile.ZipInfo | None:
+    normalized = requested.replace("\\", "/").removeprefix("./").strip()
+    candidates = [normalized]
+    if relative_to:
+        parent = PurePosixPath(relative_to.replace("\\", "/")).parent
+        if str(parent) not in {"", "."}:
+            candidates.insert(0, str(parent / normalized))
+    for candidate in candidates:
+        key = candidate.casefold()
+        if key in names:
+            return names[key]
+    requested_base = PurePosixPath(normalized.casefold()).name
     matches = [info for name, info in names.items() if PurePosixPath(name).name == requested_base]
     return matches[0] if len(matches) == 1 else None
 
@@ -476,7 +485,7 @@ def inspect_osz(path: Path) -> dict[str, Any]:
                 bundle = parse_osu_text(text, PurePosixPath(info.filename).name)
                 summary = bundle["summary"]
                 audio_filename = summary.get("audio_filename") or ""
-                audio_entry = find_archive_entry(names, str(audio_filename)) if audio_filename else None
+                audio_entry = find_archive_entry(names, str(audio_filename), info.filename) if audio_filename else None
                 diff_id = hashlib.sha256((info.filename + "\0" + summary["source_sha256"]).encode("utf-8")).hexdigest()[:20]
                 difficulties.append({
                     "id": diff_id,
