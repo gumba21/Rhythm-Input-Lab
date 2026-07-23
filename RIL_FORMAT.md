@@ -5,7 +5,7 @@ Version 1 turns a song into one compressed, playable file that can be shared wit
 ## Goals
 
 - one file containing the neutral chart, metadata, mappings, and optional saved audio
-- compact note/event storage without making the runtime depend on FNF JSON
+- compact note/event storage without making the runtime depend on FNF or osu!mania source files
 - safe preview before extraction
 - clear provenance such as `Imported from gumba21` without confusing the exporter with the original charter
 - lossless preservation of the supplied OGG/MP3/WAV/FLAC/M4A/AAC/OPUS/WEBM files
@@ -25,6 +25,15 @@ song.ril
 ```
 
 Unknown archive paths, encrypted entries, symbolic links, unsafe `..` paths, and unsupported file types are rejected.
+
+## Export targets
+
+The package format itself does not impose Discord's upload limit. Rhythm Input Lab exposes two export targets:
+
+- **Discord · 8 MB** estimates the selected package contents and then enforces an exact maximum of `8,000,000` finished bytes on the backend
+- **Full package** uses the normal RIL package safety limits
+
+The Discord target may deselect optional source JSON, vocals, or instrumental audio. It never silently transcodes audio or lowers its quality merely to fit. The neutral chart and manifest remain included.
 
 ## Manifest
 
@@ -54,12 +63,12 @@ The importer verifies every declared payload hash before offering the final Impo
     "key_count": 4,
     "base_bpm": 180,
     "duration_ms": 120000,
-    "source_format": "fnf_legacy_psych"
+    "source_format": "osu_mania"
   },
   "dict": {
     "note_types": ["", "Hurt Note"],
-    "event_names": ["Camera Zoom"],
-    "event_sources": ["song.events"]
+    "event_names": ["osu! SV change"],
+    "event_sources": ["osu.TimingPoints"]
   },
   "n": [
     [1050, 0, 0, 0, 0, 0, 0, 180],
@@ -67,10 +76,11 @@ The importer verifies every declared payload hash before offering the final Impo
     [1800, 3, 0, 0, 0, 1, 3, 180]
   ],
   "e": [
-    [2500, 0, "1.1", "", 0]
+    [2500, 0, 1.5, -66.666667, 0]
   ],
   "s": [
-    [0, 180, 0, 1, 16]
+    [0, 180, 0, 1, 16, 0],
+    [1, 210, 1, 1, 16, 32000]
   ],
   "m": {
     "note_types": {},
@@ -97,8 +107,10 @@ Owner codes are `0 = player`, `1 = opponent`, and `2 = event`. A lane of `-1` me
 ### Section row
 
 ```text
-[section_index, bpm, changes_bpm, must_hit_section, length_in_steps]
+[section_index, bpm, changes_bpm, must_hit_section, length_in_steps, optional_time_ms]
 ```
+
+The optional sixth field stores the authored start of a neutral timing section. It is important for source formats such as osu!mania, where timing points can occur at arbitrary timestamps rather than after an inferred fixed-length section. Older version-1 documents with five-field section rows remain valid. When source timing metadata is available, Rhythm Input Lab upgrades their explicit section positions lazily without changing the package schema version.
 
 The importer expands these rows into the normal runtime objects consumed by Visualizer, Practice, and Analysis.
 
