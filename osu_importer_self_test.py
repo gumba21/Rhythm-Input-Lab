@@ -121,7 +121,7 @@ def main() -> None:
             raise AssertionError("Unsafe .osz path was accepted")
 
     assert getattr(app._backend.Handler, "_ril_osu_import_installed", False)
-    assert APP_VERSION == "4.9.0-dev"
+    assert APP_VERSION == "4.9.1-dev"
     print(f"Rhythm Input Lab {APP_VERSION} osu!mania importer self-test passed.")
 
 
