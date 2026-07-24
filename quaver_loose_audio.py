@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 import shutil
 import urllib.parse
 from pathlib import Path
@@ -12,7 +13,6 @@ import quaver_import_backend as backend_adapter
 import quaver_importer
 
 _ORIGINAL_COMMIT = backend_adapter._commit_import
-_AUDIO_PART_PREFIX = "audio-"
 
 
 def _upload_audio_chunk(payload: dict[str, Any]) -> dict[str, Any]:
@@ -70,6 +70,40 @@ def _upload_audio_chunk(payload: dict[str, Any]) -> dict[str, Any]:
         (upload_dir / "companion-audio.json").write_text(json.dumps(metadata, ensure_ascii=False), encoding="utf-8")
         result.update({"complete": True, **metadata})
         return result
+
+
+def _link_audio(payload: dict[str, Any]) -> dict[str, Any]:
+    source_id = str(payload.get("source_upload_id") or "")
+    target_id = str(payload.get("target_upload_id") or "")
+    if not backend_adapter._UPLOAD_ID.match(source_id) or not backend_adapter._UPLOAD_ID.match(target_id):
+        raise ValueError("Invalid Quaver audio-link id")
+    if source_id == target_id:
+        raise ValueError("Quaver audio link source and target must differ")
+    with backend_adapter._LOCK:
+        source_dir = backend_adapter._TEMP_ROOT / source_id
+        target_dir = backend_adapter._TEMP_ROOT / target_id
+        if not source_dir.is_dir() or not target_dir.is_dir():
+            raise FileNotFoundError("Quaver audio link source or target was not found")
+        source_audio = next((path for path in source_dir.glob("companion-audio.*") if path.is_file() and path.suffix.casefold() in quaver_importer.SUPPORTED_AUDIO_SUFFIXES), None)
+        if not source_audio:
+            raise FileNotFoundError("The shared Quaver audio has not finished uploading")
+        for old in target_dir.glob("companion-audio.*"):
+            old.unlink(missing_ok=True)
+        target_audio = target_dir / source_audio.name
+        try:
+            os.link(source_audio, target_audio)
+        except OSError:
+            shutil.copy2(source_audio, target_audio)
+        try:
+            metadata = json.loads((source_dir / "companion-audio.json").read_text(encoding="utf-8"))
+        except Exception:
+            metadata = {
+                "filename": source_audio.name,
+                "relative_path": source_audio.name,
+                "size_bytes": int(source_audio.stat().st_size),
+            }
+        (target_dir / "companion-audio.json").write_text(json.dumps(metadata, ensure_ascii=False), encoding="utf-8")
+        return {"linked": True, **metadata}
 
 
 def _commit_import(app: Any, upload_id: str, payload: dict[str, Any], app_version: str) -> dict[str, Any]:
@@ -130,10 +164,11 @@ def install_quaver_loose_audio(backend: ModuleType) -> None:
 
     def do_POST(self) -> None:  # type: ignore[no-untyped-def]
         path = urllib.parse.urlparse(self.path).path
-        if path != "/api/quaver/import/audio/chunk":
+        if path not in {"/api/quaver/import/audio/chunk", "/api/quaver/import/audio/link"}:
             return original_post(self)
         try:
-            result = _upload_audio_chunk(self._body_json())
+            payload = self._body_json()
+            result = _upload_audio_chunk(payload) if path.endswith("/chunk") else _link_audio(payload)
             self._json({"ok": True, "data": result})
         except FileNotFoundError as exc:
             self._error(exc, 404)
