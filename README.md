@@ -19,6 +19,7 @@ The server binds only to `127.0.0.1`. Charts, recordings, locally attached audio
 - legacy/Psych-style FNF chart and event importing
 - standalone `.osu` and multi-difficulty `.osz` osu!mania importing
 - standalone `.qua` and multi-difficulty `.qp` Quaver importing
+- multi-file and folder-based Quaver importing with automatic matching of loose MP3, OGG, WAV, FLAC, M4A, AAC, OPUS, and WEBM audio from each chart's `AudioFile`
 - selectable 4K–9K Quaver charts with taps, long notes, mines, BPM/time-signature changes, SV, scroll-speed factors, timing groups, bookmarks, metadata, and automatic `.qp` audio discovery
 - selectable 4K–9K osu!mania difficulties with taps, holds, BPM changes, inherited scroll-velocity points, breaks, mapper metadata, beatmap IDs, and automatic `.osz` audio discovery
 - per-format capability previews that distinguish preserved, extension-stored, approximated, and currently unrendered data
@@ -31,6 +32,7 @@ The server binds only to `127.0.0.1`. Charts, recordings, locally attached audio
 - descriptive Practice run data including mean offset, timing spread, median absolute offset, hit rate, chart density, FC state, session totals, and local-history totals
 - saved per-song instrumental and vocals playback with byte-range seeking
 - portable `.ril` song packages containing the compact neutral chart, mechanic mappings, metadata, sharing username, and optional instrumental/vocals audio
+- non-blocking local `.ril` export jobs with live stage/byte progress, cancellation, partial-file cleanup, and permanent saves inside `RIL Exports`
 - verified `.ril` import preview, SHA-256 integrity checks, duplicate handling, provenance, and immediate Practice/Visualizer access
 - Discord export target with an exact 8,000,000-byte package limit and a separate unrestricted full-package target
 
@@ -53,12 +55,15 @@ Common shortcuts:
 
 ## Import Quaver
 
-Open **Import**, then drop either:
+Open **Import** and choose **Quaver**, then use one of these paths:
 
-- a `.qp` mapset, which can contain multiple `.qua` difficulties and shared audio
-- a standalone `.qua` chart, which imports the chart while audio can be attached afterward
+- drop a `.qp` mapset, which can contain multiple `.qua` difficulties and shared audio
+- select one or more loose `.qua` / `.qp` files
+- choose the entire Quaver song folder so RIL can match every standalone chart's `AudioFile` automatically
 
 The preview lists every supported 4K–9K chart before anything is written and reports mines, holds, SV, scroll-speed factors, active actions per second, media availability, and fidelity boundaries. Mines become neutral hazards; timing groups, keysounds, samples, bookmarks, editor data, and source metadata are retained without creating a Quaver-specific gameplay runtime.
+
+A standalone `.qua` selected by itself remains valid as a chart-only import. Selecting its folder or selecting the chart together with its referenced audio imports playback at the same time.
 
 See [`QUAVER_IMPORT.md`](QUAVER_IMPORT.md) for detailed behavior, archive protections, and current compatibility limits.
 
@@ -75,7 +80,11 @@ The adapter preserves source timing and metadata as neutral chart data and sourc
 
 ## Portable `.ril` songs
 
-Open a song in the library and choose **Export .ril** to create one compressed file that can be sent to another Rhythm Input Lab user. Attempts and personal statistics are excluded. The recipient can import the package from the Import page, inspect its metadata and audio contents, then play it immediately.
+Open a song in the library and choose **Export .ril**. The local Python app starts a background export job immediately, while the modal reports the current stage, source file, percentage, and bytes processed. The rest of the local website remains usable while the package is written.
+
+Completed packages are saved permanently under the configured output folder's `RIL Exports` directory. Cancelling removes the incomplete `.partial` file. The completed modal can open the folder or download an additional browser copy.
+
+Attempts and personal statistics are excluded. The recipient can import the package from the Import page, inspect its metadata and audio contents, then play it immediately.
 
 The default Discord target estimates the selected contents and refuses the finished export when it exceeds exactly 8,000,000 bytes. It removes optional selections rather than silently transcoding or lowering audio quality. The Full package target keeps the normal package limits.
 
@@ -94,10 +103,14 @@ The package and compact neutral chart specification is documented in [`RIL_FORMA
 ├── osu_importer_self_test.py      osu!mania parser and archive safety tests
 ├── quaver_importer.py             Quaver .qua/.qp parser and neutral adapter
 ├── quaver_import_backend.py       chunked Quaver preview/import backend
+├── quaver_loose_audio.py          loose-folder audio upload and import adapter
 ├── quaver_importer_self_test.py   Quaver parser and archive safety tests
 ├── ril_package_backend.py         neutral RIL chart and portable package backend
+├── ril_export_reliability.py      persistent atomic package writer
+├── ril_export_jobs.py             local background export queue and progress API
 ├── discord_export_backend.py      exact Discord package-size enforcement
 ├── neutral_chart_polish.py        explicit neutral timing-section positions
+├── export_jobs_self_test.py       export queue and folder-audio regression tests
 ├── practice_polish_self_test.py   Practice polish and Discord export tests
 ├── RIL_FORMAT.md                  portable package and compact chart specification
 ├── OSU_IMPORT.md                  osu!mania import behavior and limitations
