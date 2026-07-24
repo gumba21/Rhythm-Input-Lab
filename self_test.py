@@ -134,6 +134,7 @@ def main() -> None:
                 "practice-library-menu.js", "practice-save.js", "song-media.js",
                 "analysis.js", "analysis-structure-bridge.js", "analysis-unified.js",
                 "song-picker.js", "ril-packages.js", "ril-export-polish.js", "osu-import.js",
+                "quaver-import.js",
             ]
         }
         minimums = {
@@ -145,7 +146,7 @@ def main() -> None:
             "song-media.js": 10000, "analysis.js": 30000,
             "analysis-unified.js": 15000, "song-picker.js": 10000,
             "ril-packages.js": 20000, "ril-export-polish.js": 5000,
-            "osu-import.js": 15000,
+            "osu-import.js": 15000, "quaver-import.js": 15000,
         }
         for name, minimum in minimums.items():
             assert len(scripts[name]) > minimum, name
@@ -180,12 +181,14 @@ def main() -> None:
         assert "8,000,000-byte limit" in scripts["ril-export-polish.js"]
         assert "/api/osu/import/chunk" in scripts["osu-import.js"]
         assert "Import osu!mania" in scripts["osu-import.js"]
+        assert "/api/quaver/import/chunk" in scripts["quaver-import.js"]
+        assert "Import Quaver" in scripts["quaver-import.js"]
         for script in [
             "/global-bridge.js", "/shared-results.js", "/visualizer-preferences.js",
             "/practice-polish.js", "/practice-comfort.js", "/practice-library-menu.js",
             "/practice-save.js", "/song-media.js", "/analysis.js",
             "/analysis-structure-bridge.js", "/analysis-unified.js", "/song-picker.js",
-            "/ril-packages.js", "/ril-export-polish.js", "/osu-import.js",
+            "/ril-packages.js", "/ril-export-polish.js", "/osu-import.js", "/quaver-import.js",
         ]:
             assert script in scripts["app.js"]
 
@@ -194,13 +197,14 @@ def main() -> None:
         assert getattr(v4._backend.Handler, "_ril_practice_attempt_installed", False)
         assert getattr(v4._backend.Handler, "_ril_package_installed", False)
         assert getattr(v4._backend.Handler, "_ril_osu_import_installed", False)
+        assert getattr(v4._backend.Handler, "_ril_quaver_import_installed", False)
         assert getattr(v4._backend.Handler, "_ril_discord_export_installed", False)
         assert getattr(ril_package_backend, "_neutral_chart_polish_installed", False)
         assert v4.APP_VERSION == APP_VERSION
-        assert APP_VERSION == "4.9.1-dev"
+        assert APP_VERSION == "5.0.0-dev"
 
     print(f"Rhythm Input Lab {APP_VERSION} self-test passed.")
-    print("Practice count-ins, descriptive run data, Discord-sized packages, and osu!mania importing are present.")
+    print("Practice polish, portable sharing, osu!mania importing, and Quaver importing are present.")
 
 
 if __name__ == "__main__":
