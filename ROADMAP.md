@@ -96,17 +96,30 @@
 - unrestricted Full package target retained for non-Discord sharing
 - dedicated neutral-timing and Discord-size regression tests
 
-## Next up
+## Current development milestone
 
 ### 5.0 — Universal adapter and conversion boundary
 
-- Quaver `.qua` import into the neutral RIL model
+Completed in the current development branch:
+
+- Quaver standalone `.qua` and multi-difficulty `.qp` importing
+- taps, long notes, mines, BPM, signatures, SV, scroll-speed factors, timing groups, bookmarks, samples, hit sounds, editor layers, and source metadata
+- automatic `.qp` audio discovery and lossless saved-audio import
+- source-format capability reports separating preserved, extension-stored, approximated, and currently unrendered features
+- active-actions-per-second import measurement without adopting Quaver's difficulty or scoring systems
+- chunked upload, map selection, duplicate handling, provenance, archive protections, and dedicated parser fixtures
+- immediate neutral RIL use in Practice, Visualizer, Analysis, attempts, and `.ril` sharing
+
+Remaining 5.0 work:
+
 - StepMania `.sm` / `.ssc` import into the neutral RIL model
-- source-format capability reports showing preserved, approximated, extension-stored, and unsupported mechanics
-- shared song/audio discovery where each source format supports it
-- adapter contract cleanup so Practice, Visualizer, Analysis, and packages never branch on the source game
-- conversion previews and external-format exports only after round-trip fidelity is measurable
+- shared adapter contracts and capability vocabulary across FNF, osu!mania, Quaver, StepMania, and RIL
+- source-neutral metadata and media-discovery cleanup
+- conversion previews that enumerate every preserved, approximated, extension-stored, or dropped feature
+- external-format exports only after round-trip fidelity can be measured and reported
 - continue adding sortable, inspectable measurements rather than automated coaching instructions
+
+## Later milestones
 
 ### 5.5 — Chart reconstruction and Chart Doctor
 
