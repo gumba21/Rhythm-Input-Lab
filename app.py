@@ -14,6 +14,7 @@ from quaver_loose_audio import install_quaver_loose_audio
 from reports_backend import install_report_endpoint
 from ril_export_jobs import install_ril_export_jobs
 from ril_export_reliability import install_ril_export_reliability
+from ril_export_thread_guard import install_ril_export_thread_guard
 from ril_package_backend import install_ril_package_endpoint
 from ril_version import APP_NAME, APP_VERSION
 
@@ -37,6 +38,7 @@ install_quaver_import_endpoint(_backend)
 install_quaver_loose_audio(_backend)
 install_discord_export_endpoint(_backend)
 install_ril_export_jobs(_backend)
+install_ril_export_thread_guard(_backend)
 
 RhythmApp = _backend.RhythmApp
 RecorderState = _backend.RecorderState
