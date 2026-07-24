@@ -11,14 +11,17 @@ The current development version is read from the root `VERSION` file. The suppor
 3. Run `run.bat`.
 4. Keep the console window open while using the browser GUI.
 
-The server binds only to `127.0.0.1`. Charts, recordings, locally attached audio, osu! beatmaps, and imported/exported `.ril` packages are not uploaded by the app.
+The server binds only to `127.0.0.1`. Charts, recordings, locally attached audio, imported maps, and imported/exported `.ril` packages are not uploaded by the app.
 
 ## Current features
 
 - global 4K–9K physical input recording with optional separate dodge input
 - legacy/Psych-style FNF chart and event importing
 - standalone `.osu` and multi-difficulty `.osz` osu!mania importing
+- standalone `.qua` and multi-difficulty `.qp` Quaver importing
+- selectable 4K–9K Quaver charts with taps, long notes, mines, BPM/time-signature changes, SV, scroll-speed factors, timing groups, bookmarks, metadata, and automatic `.qp` audio discovery
 - selectable 4K–9K osu!mania difficulties with taps, holds, BPM changes, inherited scroll-velocity points, breaks, mapper metadata, beatmap IDs, and automatic `.osz` audio discovery
+- per-format capability previews that distinguish preserved, extension-stored, approximated, and currently unrendered data
 - one searchable, naturally sorted song browser shared by Visualizer, Practice, and Analysis
 - chart-only, replay-only, and chart/replay comparison views
 - automatic/manual replay alignment with one cached result shared by Visualizer and Analysis
@@ -48,6 +51,17 @@ Common shortcuts:
 - `Home` / `End`: jump to the selected range edges
 - `,` / `.`: previous/next timing section
 
+## Import Quaver
+
+Open **Import**, then drop either:
+
+- a `.qp` mapset, which can contain multiple `.qua` difficulties and shared audio
+- a standalone `.qua` chart, which imports the chart while audio can be attached afterward
+
+The preview lists every supported 4K–9K chart before anything is written and reports mines, holds, SV, scroll-speed factors, active actions per second, media availability, and fidelity boundaries. Mines become neutral hazards; timing groups, keysounds, samples, bookmarks, editor data, and source metadata are retained without creating a Quaver-specific gameplay runtime.
+
+See [`QUAVER_IMPORT.md`](QUAVER_IMPORT.md) for detailed behavior, archive protections, and current compatibility limits.
+
 ## Import osu!mania
 
 Open **Import**, then drop either:
@@ -55,7 +69,7 @@ Open **Import**, then drop either:
 - an `.osz` beatmap set, which can contain multiple difficulties and its audio
 - a standalone `.osu` chart, which imports the chart while audio can be attached afterward
 
-The preview lists every supported 4K–9K mania difficulty before anything is written. Choose the difficulties to import, then open any result directly in Practice or Visualizer. Each imported chart is normalized into the same RIL runtime model used by FNF and portable `.ril` songs, so Analysis, saved attempts, collections, and `.ril` export work without a separate osu!-specific runtime.
+The preview lists every supported 4K–9K mania difficulty before anything is written. Choose the difficulties to import, then open any result directly in Practice or Visualizer. Each imported chart is normalized into the same RIL runtime model used by FNF, Quaver, and portable `.ril` songs, so Analysis, saved attempts, collections, and `.ril` export work without a separate osu!-specific runtime.
 
 The adapter preserves source timing and metadata as neutral chart data and source extensions. Non-mania charts and unsupported key modes are listed as skipped rather than silently misread. See [`OSU_IMPORT.md`](OSU_IMPORT.md) for the detailed behavior and limitations.
 
@@ -71,26 +85,30 @@ The package and compact neutral chart specification is documented in [`RIL_FORMA
 
 ```text
 .
-├── app.py                       version-aware GUI launcher
-├── backend.py                   local browser GUI backend
-├── rhythm_input_lab_core.py     recorder and analysis core
-├── fnf_importer.py              FNF normalization and compatibility adapter
-├── osu_importer.py              osu!mania .osu/.osz parser and neutral adapter
-├── osu_import_backend.py        chunked osu!mania preview/import backend
-├── osu_importer_self_test.py    osu!mania parser and archive safety tests
-├── ril_package_backend.py       neutral RIL chart and portable package backend
-├── discord_export_backend.py    exact Discord package-size enforcement
-├── neutral_chart_polish.py      explicit neutral timing-section positions
-├── practice_polish_self_test.py Practice polish and Discord export tests
-├── RIL_FORMAT.md                portable package and compact chart specification
-├── OSU_IMPORT.md                osu!mania import behavior and limitations
-├── THIRD_PARTY_NOTICES.md       source references, licenses, and attribution
-├── self_test.py                 application smoke tests
-├── VERSION                      single application version source
-├── web/                         browser interface and atlases
-├── run.bat                      start the GUI
-├── run-console.bat              start the console fallback
-└── run-tests.bat                run the smoke tests
+├── app.py                         version-aware GUI launcher
+├── backend.py                     local browser GUI backend
+├── rhythm_input_lab_core.py       recorder and analysis core
+├── fnf_importer.py                FNF normalization and compatibility adapter
+├── osu_importer.py                osu!mania .osu/.osz parser and neutral adapter
+├── osu_import_backend.py          chunked osu!mania preview/import backend
+├── osu_importer_self_test.py      osu!mania parser and archive safety tests
+├── quaver_importer.py             Quaver .qua/.qp parser and neutral adapter
+├── quaver_import_backend.py       chunked Quaver preview/import backend
+├── quaver_importer_self_test.py   Quaver parser and archive safety tests
+├── ril_package_backend.py         neutral RIL chart and portable package backend
+├── discord_export_backend.py      exact Discord package-size enforcement
+├── neutral_chart_polish.py        explicit neutral timing-section positions
+├── practice_polish_self_test.py   Practice polish and Discord export tests
+├── RIL_FORMAT.md                  portable package and compact chart specification
+├── OSU_IMPORT.md                  osu!mania import behavior and limitations
+├── QUAVER_IMPORT.md               Quaver import behavior and limitations
+├── THIRD_PARTY_NOTICES.md         source references, licenses, and attribution
+├── self_test.py                   application smoke tests
+├── VERSION                        single application version source
+├── web/                           browser interface and atlases
+├── run.bat                        start the GUI
+├── run-console.bat                start the console fallback
+└── run-tests.bat                  run the smoke tests
 ```
 
 Runtime songs, attempts, reports, saved audio, and normalized charts are stored in the output folder selected in Settings, not in the repository.
