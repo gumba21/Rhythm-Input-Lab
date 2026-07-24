@@ -5,7 +5,14 @@
   let folder = null;
   let activeJob = null;
   let pollTimer = null;
+  let pollInFlight = false;
   let boundButton = null;
+
+  function esc(value) {
+    return String(value ?? "").replace(/[&<>'"]/g, character => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
+    })[character]);
+  }
 
   function formatBytes(bytes) {
     const value = Math.max(0, Number(bytes || 0));
@@ -47,9 +54,9 @@
       ? `${formatBytes(job.bytes_written)} of ${formatBytes(job.bytes_total)}`
       : "Preparing local files";
     root.innerHTML = `
-      <div class="ril-job-head"><b>${String(job.stage || "Exporting")}</b><span>${Math.round(progress)}%</span></div>
+      <div class="ril-job-head"><b>${esc(job.stage || "Exporting")}</b><span>${Math.round(progress)}%</span></div>
       <div class="ril-job-progress"><i style="width:${progress}%"></i></div>
-      <div class="list-sub">${job.current_file ? `${String(job.current_file)} · ` : ""}${bytes}</div>
+      <div class="list-sub">${job.current_file ? `${esc(job.current_file)} · ` : ""}${bytes}</div>
       <div class="actions ril-job-actions"><button id="rilCancelExportJob" class="button small danger">Cancel export</button></div>`;
     q("#rilCancelExportJob", root)?.addEventListener("click", cancelExport);
   }
@@ -64,10 +71,12 @@
   function stopPolling() {
     if (pollTimer) clearTimeout(pollTimer);
     pollTimer = null;
+    pollInFlight = false;
   }
 
   async function pollJob() {
-    if (!activeJob) return;
+    if (!activeJob || pollInFlight) return;
+    pollInFlight = true;
     try {
       const job = await window.api(`/api/ril/export/status?job=${encodeURIComponent(activeJob)}`);
       if (job.status === "completed") {
@@ -82,7 +91,7 @@
         activeJob = null;
         resetButton();
         const root = q("#rilExportSummary");
-        if (root) root.innerHTML = `<div class="ril-job-error"><b>Export failed</b><div class="list-sub">${String(job.error || "Unknown export error")}</div></div>`;
+        if (root) root.innerHTML = `<div class="ril-job-error"><b>Export failed</b><div class="list-sub">${esc(job.error || "Unknown export error")}</div></div>`;
         window.toast?.(`RIL export failed: ${job.error || "unknown error"}`, "error", 9000);
         return;
       }
@@ -95,6 +104,7 @@
         return;
       }
       renderProgress(job);
+      pollInFlight = false;
       pollTimer = setTimeout(pollJob, 250);
     } catch (error) {
       stopPolling();
@@ -160,12 +170,8 @@
     setTimeout(bindExportButton, 0);
   }, true);
 
-  const observer = new MutationObserver(() => {
-    bindExportButton();
-    if (!q("#rilExportModal")?.classList.contains("open") || !activeJob) return;
-    pollJob();
-  });
-  observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+  const observer = new MutationObserver(bindExportButton);
+  observer.observe(document.documentElement, { childList: true, subtree: true });
 
   const style = document.createElement("style");
   style.id = "rilExportJobStyles";
