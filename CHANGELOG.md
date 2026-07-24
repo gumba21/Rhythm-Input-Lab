@@ -1,5 +1,35 @@
 # Changelog
 
+## 5.0.0-dev
+
+### Quaver neutral adapter
+
+- imports standalone `.qua` charts and multi-difficulty `.qp` mapsets through a dedicated local preview
+- accepts supported 4K–9K modes, including supported `+1` scratch layouts
+- preserves taps, authored long-note endpoints, mines, BPM/time-signature changes, initial and changing SV data, scroll-speed-factor keyframes, timing groups, bookmarks, hit sounds, keysounds, samples, editor layers, mapper/difficulty metadata, map IDs, and source extensions
+- maps Quaver mines to neutral hazard notes rather than normal playable notes
+- reports active actions per second as descriptive source data without adopting Quaver scoring or difficulty calculation
+- creates neutral RIL documents immediately so Practice, Visualizer, Analysis, attempts, and `.ril` packages work without a Quaver-specific runtime
+
+### Mapsets, media, and fidelity reporting
+
+- discovers `.qp` audio relative to each chart, by exact archive path, or by an unambiguous filename fallback
+- saves supported OGG, MP3, WAV, FLAC, M4A, AAC, OPUS, and WEBM audio without transcoding
+- hard-links shared mapset audio where supported and falls back to normal copies
+- previews every supported map before writing anything and lists malformed or unsupported charts separately
+- adds capability reporting for preserved, extension-stored, approximated, and currently unrendered source features
+- adds separate-copy and replace-matching-chart behavior while preserving attempt folders
+- adds Quaver provenance badges and immediate Practice/Visualizer actions after import
+
+### Safety, dependencies, and documentation
+
+- parses `.qua` YAML as data through PyYAML and rejects YAML aliases
+- rejects unsafe archive paths, encrypted entries, symbolic links, excessive file counts, oversized expanded archives, and oversized chart text
+- adds synthetic tap, hold, mine, timing, SV, SSF, timing-group, bookmark, sound-effect, audio-discovery, unsupported-mode, and unsafe-path fixtures
+- wires the Quaver backend and browser module into the normal launch path and local/CI test commands
+- documents behavior and compatibility boundaries in `QUAVER_IMPORT.md`
+- credits the uploaded Quaver client and public Quaver.API implementation as format references while keeping the adapter independently implemented
+
 ## 4.9.1-dev
 
 ### Practice count-in and transport polish
