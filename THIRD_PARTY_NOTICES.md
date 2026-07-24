@@ -38,9 +38,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+## Quaver and Quaver.API
+
+Rhythm Input Lab's Quaver adapter was developed with the user-supplied Quaver client source and the public **Quaver.API** implementation available as format references, particularly the `.qua` model, `.qp` packaging, key-mode mapping, mines, long notes, timing points, slider velocities, scroll-speed factors, timing groups, bookmarks, hit sounds, and active-actions-per-second definition.
+
+Rhythm Input Lab uses an independently written Python parser and neutral adapter. It does not bundle Quaver client code, Quaver.API assemblies, Quaver artwork, gameplay assets, or Quaver's difficulty calculator.
+
+The referenced Quaver source is licensed under the Mozilla Public License 2.0. No Quaver source files are copied into Rhythm Input Lab.
+
 ## osu!
 
 osu! and osu!mania are created by ppy Pty Ltd and contributors. Rhythm Input Lab is an independent project and is not affiliated with or endorsed by osu! or its creators. Imported beatmaps and audio remain subject to their respective creators' rights and applicable sharing rules.
+
+## Quaver
+
+Quaver is created by Swan and the Quaver Team. Rhythm Input Lab is an independent project and is not affiliated with or endorsed by Quaver or its creators. Imported maps and media remain subject to their respective creators' rights and applicable sharing rules.
 
 ## Supplied visual assets
 
