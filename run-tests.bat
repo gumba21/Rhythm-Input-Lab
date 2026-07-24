@@ -11,6 +11,9 @@ if errorlevel 1 goto :failed
 py osu_importer_self_test.py
 if errorlevel 1 goto :failed
 
+py quaver_importer_self_test.py
+if errorlevel 1 goto :failed
+
 py practice_polish_self_test.py
 if errorlevel 1 goto :failed
 
