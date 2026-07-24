@@ -32,7 +32,13 @@
                                         loadScript('/song-picker.js', () => {
                                           loadScript('/ril-packages.js', () => {
                                             loadScript('/ril-export-polish.js', () => {
-                                              loadScript('/osu-import.js', () => loadScript('/quaver-import.js'));
+                                              loadScript('/ril-export-reliability.js', () => {
+                                                loadScript('/osu-import.js', () => {
+                                                  loadScript('/quaver-import.js', () => {
+                                                    loadScript('/quaver-multi-import.js', () => loadScript('/import-center.js'));
+                                                  });
+                                                });
+                                              });
                                             });
                                           });
                                         });
