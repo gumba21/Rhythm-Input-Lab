@@ -147,17 +147,22 @@ def main() -> None:
     web = Path(__file__).parent / "web"
     multi = (web / "quaver-multi-import.js").read_text(encoding="utf-8")
     center = (web / "import-center.js").read_text(encoding="utf-8")
-    export_ui = (web / "ril-export-reliability.js").read_text(encoding="utf-8")
+    export_ui = (web / "ril-export-v2.js").read_text(encoding="utf-8")
     app_js = (web / "app.js").read_text(encoding="utf-8")
     assert "input.multiple = true" in multi
     assert "quaverBatchCommit" in multi
     assert "data-import-tab=\"quaver\"" in center
     assert "field.value = name" in center
-    assert "saved_path" in export_ui
-    for script in ["/quaver-multi-import.js", "/import-center.js", "/ril-export-reliability.js"]:
+    assert "/api/ril/export/start" in export_ui
+    assert "stopImmediatePropagation" in export_ui
+    assert "rilExportV2Modal" in export_ui
+    for script in ["/quaver-multi-import.js", "/import-center.js", "/ril-export-v2.js"]:
         assert script in app_js
+    assert "/ril-export-jobs.js" not in app_js
+    assert "/ril-export-reliability.js" not in app_js
 
     assert getattr(app._backend.Handler, "_ril_export_reliability_installed", False)
+    assert getattr(app._backend.Handler, "_ril_export_jobs_installed", False)
     assert APP_VERSION == "5.0.0-dev"
     print(f"Rhythm Input Lab {APP_VERSION} development polish self-test passed.")
 
