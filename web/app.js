@@ -31,7 +31,9 @@
                                       loadScript('/analysis-language-polish.js', () => {
                                         loadScript('/song-picker.js', () => {
                                           loadScript('/ril-packages.js', () => {
-                                            loadScript('/ril-export-polish.js', () => loadScript('/osu-import.js'));
+                                            loadScript('/ril-export-polish.js', () => {
+                                              loadScript('/osu-import.js', () => loadScript('/quaver-import.js'));
+                                            });
                                           });
                                         });
                                       });
