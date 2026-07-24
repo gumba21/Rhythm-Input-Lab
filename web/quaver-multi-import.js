@@ -2,7 +2,8 @@
 
 (() => {
   const CHUNK_SIZE = 768 * 1024;
-  const runtime = { active: false, uploading: false, sources: [] };
+  const AUDIO_PATTERN = /\.(ogg|mp3|wav|flac|m4a|aac|opus|webm)$/i;
+  const runtime = { active: false, uploading: false, sources: [], libraryFiles: [] };
   const q = (selector, root = document) => root.querySelector(selector);
   const qa = (selector, root = document) => [...root.querySelectorAll(selector)];
 
@@ -37,6 +38,20 @@
     return Math.abs(high - low) > 0.001 ? `${low.toFixed(2)}–${high.toFixed(2)} BPM` : `${low.toFixed(2)} BPM`;
   }
 
+  function normalizedPath(file) {
+    return String(file?.webkitRelativePath || file?.name || "").replace(/\\/g, "/").replace(/^\.\//, "");
+  }
+
+  function pathDir(path) {
+    const parts = String(path || "").split("/");
+    parts.pop();
+    return parts.join("/");
+  }
+
+  function pathBase(path) {
+    return String(path || "").replace(/\\/g, "/").split("/").pop() || "";
+  }
+
   function quaverFiles(fileList) {
     return [...(fileList || [])].filter(file => /\.(qua|qp)$/i.test(file.name));
   }
@@ -48,6 +63,21 @@
       binary += String.fromCharCode(...bytes.subarray(offset, Math.min(bytes.length, offset + 0x8000)));
     }
     return btoa(binary);
+  }
+
+  function findCompanionAudio(source, referenced) {
+    const wanted = String(referenced || "").replace(/\\/g, "/").replace(/^\.\//, "");
+    if (!wanted) return null;
+    const media = runtime.libraryFiles.filter(file => AUDIO_PATTERN.test(file.name));
+    const sourceDir = pathDir(normalizedPath(source.file));
+    const relativeWanted = [sourceDir, wanted].filter(Boolean).join("/").replace(/\/+/g, "/").toLowerCase();
+    const exactRelative = media.find(file => normalizedPath(file).toLowerCase() === relativeWanted);
+    if (exactRelative) return exactRelative;
+    const exactPath = media.find(file => normalizedPath(file).toLowerCase() === wanted.toLowerCase());
+    if (exactPath) return exactPath;
+    const basename = pathBase(wanted).toLowerCase();
+    const matches = media.filter(file => file.name.toLowerCase() === basename || pathBase(normalizedPath(file)).toLowerCase() === basename);
+    return matches.length === 1 ? matches[0] : null;
   }
 
   async function cancelSource(source) {
@@ -65,10 +95,11 @@
     runtime.active = false;
     runtime.uploading = false;
     runtime.sources = [];
+    runtime.libraryFiles = [];
     await Promise.all(sources.map(cancelSource));
   }
 
-  function renderProgress(activeIndex = 0, filePercent = 0) {
+  function renderProgress(activeIndex = 0, filePercent = 0, label = "Reading chart") {
     const root = q("#quaverImportPreview");
     if (!root) return;
     const completed = runtime.sources.filter(source => source.preview || source.error).length;
@@ -78,9 +109,39 @@
     const current = runtime.sources[activeIndex];
     root.className = "quaver-preview";
     root.innerHTML = `
-      <div class="quaver-progress-head"><b>Reading ${runtime.sources.length} Quaver source${runtime.sources.length === 1 ? "" : "s"}…</b><span>${Math.min(100, overall)}%</span></div>
+      <div class="quaver-progress-head"><b>${label} · ${runtime.sources.length} Quaver source${runtime.sources.length === 1 ? "" : "s"}</b><span>${Math.min(100, overall)}%</span></div>
       <div class="quaver-progress"><i style="width:${Math.min(100, overall)}%"></i></div>
       <div class="list-sub">${current ? `${esc(current.file.name)} · ${Math.round(filePercent)}%` : "Preparing files"}</div>`;
+  }
+
+  async function uploadCompanion(source, sourceIndex, audioFile) {
+    const total = Math.max(1, Math.ceil(audioFile.size / CHUNK_SIZE));
+    let result = null;
+    for (let index = 0; index < total; index++) {
+      if (!runtime.active) throw new Error("Batch import cancelled");
+      const start = index * CHUNK_SIZE;
+      result = await window.api("/api/quaver/import/audio/chunk", {
+        method: "POST",
+        body: {
+          upload_id: source.uploadId,
+          filename: audioFile.name,
+          relative_path: normalizedPath(audioFile),
+          index,
+          total,
+          data: base64(await audioFile.slice(start, Math.min(audioFile.size, start + CHUNK_SIZE)).arrayBuffer()),
+        },
+      });
+      renderProgress(sourceIndex, (index + 1) / total * 100, "Adding detected audio");
+    }
+    if (!result?.complete) throw new Error("Companion audio upload finished without confirmation");
+    source.audioFile = audioFile;
+    const row = source.preview?.difficulties?.[0];
+    if (row) {
+      row.has_audio = true;
+      row.audio_entry = `local:${normalizedPath(audioFile)}`;
+      row.local_audio_filename = audioFile.name;
+    }
+    source.preview.warnings = (source.preview.warnings || []).filter(message => !/standalone \.qua.*audio|attach audio/i.test(message));
   }
 
   async function uploadSource(source, sourceIndex) {
@@ -100,26 +161,39 @@
           data: base64(await file.slice(start, Math.min(file.size, start + CHUNK_SIZE)).arrayBuffer()),
         },
       });
-      renderProgress(sourceIndex, (index + 1) / total * 100);
+      renderProgress(sourceIndex, (index + 1) / total * 100, "Reading chart");
     }
     if (!result?.complete || !result.preview) throw new Error("Upload finished without a Quaver preview");
     source.preview = result.preview;
+    if (/\.qua$/i.test(file.name)) {
+      const referenced = source.preview.difficulties?.[0]?.audio_filename;
+      source.requestedAudio = referenced || "";
+      const companion = findCompanionAudio(source, referenced);
+      if (companion) await uploadCompanion(source, sourceIndex, companion);
+    }
   }
 
-  async function startBatch(files) {
+  async function startBatch(fileList) {
     if (runtime.uploading) return;
+    const allFiles = [...(fileList || [])];
+    const sources = quaverFiles(allFiles);
+    if (!sources.length) return window.toast?.("Choose a folder or files containing .qua or .qp charts.", "error");
     await window.rilQuaverImport?.cancelUpload?.();
     await cancelBatch();
     runtime.active = true;
     runtime.uploading = true;
-    runtime.sources = files.map((file, index) => ({
+    runtime.libraryFiles = allFiles;
+    runtime.sources = sources.map((file, index) => ({
       file,
       uploadId: `quaver-${Date.now().toString(36)}-${index}-${Math.random().toString(36).slice(2, 9)}`,
       preview: null,
       error: "",
       committed: false,
+      audioFile: null,
+      requestedAudio: "",
     }));
-    q("#quaverFileName").textContent = `${files.length} files · ${formatBytes(files.reduce((sum, file) => sum + file.size, 0))}`;
+    const mediaCount = allFiles.filter(file => AUDIO_PATTERN.test(file.name)).length;
+    q("#quaverFileName").textContent = `${sources.length} chart/mapset files${mediaCount ? ` · ${mediaCount} audio files available` : ""} · ${formatBytes(allFiles.reduce((sum, file) => sum + file.size, 0))}`;
     renderProgress();
     for (let index = 0; index < runtime.sources.length; index++) {
       const source = runtime.sources[index];
@@ -136,12 +210,13 @@
 
   function difficultyCard(row, sourceIndex, difficultyIndex) {
     const warnings = (row.warnings || []).map(message => `<div class="quaver-diff-warning">${esc(message)}</div>`).join("");
+    const audioLabel = row.local_audio_filename ? `Audio · ${esc(row.local_audio_filename)}` : row.has_audio ? "Audio included" : "No audio found";
     return `<label class="quaver-difficulty-card">
       <input class="quaver-batch-check" type="checkbox" data-source-index="${sourceIndex}" value="${esc(row.id)}" checked>
       <div class="quaver-difficulty-main">
         <div class="quaver-difficulty-head"><div><b>${esc(row.difficulty || `Difficulty ${difficultyIndex + 1}`)}</b><span>${esc(row.creator ? `mapped by ${row.creator}` : "unknown mapper")}</span></div><span class="pill">${row.key_count}K</span></div>
         <div class="quaver-difficulty-meta"><span>${Number(row.notes || 0).toLocaleString()} objects</span><span>${Number(row.holds || 0).toLocaleString()} holds</span><span>${Number(row.mines || 0).toLocaleString()} mines</span><span>${formatDuration(row.duration_ms)}</span><span>${esc(bpmText(row))}</span><span>${Number(row.active_actions_per_second || 0).toFixed(2)} active APS</span></div>
-        <div class="pill-row"><span class="pill good">Chart</span><span class="pill ${row.has_audio ? "good" : ""}">${row.has_audio ? "✓" : "—"} Audio</span><span class="pill">${Number(row.sv_count || 0)} SV</span><span class="pill">${Number(row.ssf_count || 0)} SSF</span></div>
+        <div class="pill-row"><span class="pill good">Chart</span><span class="pill ${row.has_audio ? "good" : "warn"}">${row.has_audio ? "✓" : "—"} ${audioLabel}</span><span class="pill">${Number(row.sv_count || 0)} SV</span><span class="pill">${Number(row.ssf_count || 0)} SSF</span></div>
         ${warnings}
       </div>
     </label>`;
@@ -149,13 +224,19 @@
 
   function sourceBlock(source, sourceIndex) {
     if (source.error) {
-      return `<section class="quaver-batch-source error"><div class="quaver-batch-source-head"><div><b>${esc(source.file.name)}</b><span>Could not be opened</span></div><span class="pill warn">Failed</span></div><div class="quaver-warning">${esc(source.error)}</div></section>`;
+      return `<section class="quaver-batch-source error"><div class="quaver-batch-source-head"><div><b>${esc(normalizedPath(source.file))}</b><span>Could not be opened</span></div><span class="pill warn">Failed</span></div><div class="quaver-warning">${esc(source.error)}</div></section>`;
     }
     const preview = source.preview || {};
     const rows = preview.difficulties || [];
     const unsupported = preview.unsupported || [];
+    const looseAudio = source.audioFile
+      ? `<div class="quaver-local-audio">✓ Detected ${esc(source.audioFile.name)} from the selected folder.</div>`
+      : preview.kind === "qua" && source.requestedAudio
+        ? `<div class="quaver-local-audio missing">Referenced ${esc(source.requestedAudio)}, but no unambiguous matching audio file was selected.</div>`
+        : "";
     return `<section class="quaver-batch-source">
-      <div class="quaver-batch-source-head"><div><b>${esc(source.file.name)}</b><span>${rows.length} supported difficult${rows.length === 1 ? "y" : "ies"}${unsupported.length ? ` · ${unsupported.length} skipped` : ""}</span></div><span class="pill good">${preview.kind === "qp" ? ".qp mapset" : ".qua chart"}</span></div>
+      <div class="quaver-batch-source-head"><div><b>${esc(normalizedPath(source.file))}</b><span>${rows.length} supported difficult${rows.length === 1 ? "y" : "ies"}${unsupported.length ? ` · ${unsupported.length} skipped` : ""}</span></div><span class="pill good">${preview.kind === "qp" ? ".qp mapset" : ".qua chart"}</span></div>
+      ${looseAudio}
       <div class="quaver-difficulty-list">${rows.map((row, difficultyIndex) => difficultyCard(row, sourceIndex, difficultyIndex)).join("")}</div>
       ${unsupported.length ? `<details class="quaver-unsupported-list"><summary>${unsupported.length} unsupported chart${unsupported.length === 1 ? "" : "s"}</summary>${unsupported.slice(0, 10).map(row => `<div class="quaver-unsupported"><b>${esc(row.entry_name)}</b><span>${esc(row.error)}</span></div>`).join("")}</details>` : ""}
     </section>`;
@@ -181,9 +262,10 @@
     if (!root) return;
     const supported = runtime.sources.reduce((sum, source) => sum + (source.preview?.difficulties?.length || 0), 0);
     const failed = runtime.sources.filter(source => source.error).length;
+    const audioMatched = runtime.sources.filter(source => source.audioFile || source.preview?.kind === "qp" && source.preview?.difficulties?.some(row => row.has_audio)).length;
     root.className = "quaver-preview quaver-batch-preview";
     root.innerHTML = `
-      <div class="quaver-preview-title"><div><div class="eyebrow">Multi-file Quaver import</div><h2>${supported} supported difficult${supported === 1 ? "y" : "ies"}</h2><p>${runtime.sources.length} source files${failed ? ` · ${failed} failed to parse` : ""}</p></div><span class="pill good">Batch ready</span></div>
+      <div class="quaver-preview-title"><div><div class="eyebrow">Quaver folder / multi-file import</div><h2>${supported} supported difficult${supported === 1 ? "y" : "ies"}</h2><p>${runtime.sources.length} source files · ${audioMatched} with detected audio${failed ? ` · ${failed} failed to parse` : ""}</p></div><span class="pill good">Batch ready</span></div>
       <div class="quaver-select-toolbar"><div><button id="quaverBatchAll" class="button small">Select all</button><button id="quaverBatchNone" class="button small">Select none</button></div><label>Existing names<select id="quaverBatchMode"><option value="separate">Import as separate copies</option><option value="replace">Replace matching charts</option></select></label></div>
       <div class="quaver-batch-list">${runtime.sources.map(sourceBlock).join("")}</div>
       <div id="quaverBatchSelection" class="comfort-summary"></div>
@@ -231,11 +313,11 @@
     renderBatchSuccess(imported, failures);
   }
 
-  function openPractice(folder) {
+  function openPractice(folderName) {
     window.go?.("practice");
     const select = q("#practiceSongSelect");
     if (!select) return;
-    select.value = folder;
+    select.value = folderName;
     select.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
@@ -245,14 +327,16 @@
     root.className = "quaver-preview";
     root.innerHTML = `
       <div class="quaver-preview-title"><div><div class="eyebrow">Batch complete</div><h2>${imported.length} Quaver song${imported.length === 1 ? "" : "s"} ready</h2><p>${failures.length ? `${failures.length} source file${failures.length === 1 ? "" : "s"} failed during import.` : "Every selected difficulty was imported."}</p></div><span class="pill ${failures.length ? "warn" : "good"}">${failures.length ? "Partial" : "Done"}</span></div>
-      <div class="quaver-imported-list">${imported.map(row => `<article><div><b>${esc(row.song.song_name)}</b><span>${row.summary.key_count}K · ${Number(row.summary.player_notes || 0).toLocaleString()} objects · ${Number(row.summary.mine_notes || 0).toLocaleString()} mines${row.audio_saved ? " · audio saved" : " · add audio manually"}</span></div><div class="actions"><button class="button small primary" data-quaver-batch-practice="${esc(row.song.folder)}">Practice</button><button class="button small" data-quaver-batch-viz="${esc(row.song.folder)}">Visualizer</button></div></article>`).join("")}</div>
+      <div class="quaver-imported-list">${imported.map(row => `<article><div><b>${esc(row.song.song_name)}</b><span>${row.summary.key_count}K · ${Number(row.summary.player_notes || 0).toLocaleString()} objects · ${Number(row.summary.mine_notes || 0).toLocaleString()} mines${row.audio_saved ? " · audio imported" : " · no matching audio"}</span></div><div class="actions"><button class="button small primary" data-quaver-batch-practice="${esc(row.song.folder)}">Practice</button><button class="button small" data-quaver-batch-viz="${esc(row.song.folder)}">Visualizer</button></div></article>`).join("")}</div>
       ${failures.map(row => `<div class="quaver-warning"><b>${esc(row.filename)}</b><br>${esc(row.error)}</div>`).join("")}
       <div class="actions"><button id="quaverBatchAnother" class="button">Import more Quaver files</button></div>`;
     qa("[data-quaver-batch-practice]", root).forEach(button => button.addEventListener("click", () => openPractice(button.dataset.quaverBatchPractice)));
     qa("[data-quaver-batch-viz]", root).forEach(button => button.addEventListener("click", () => window.loadVisualizer?.(button.dataset.quaverBatchViz, null)));
     q("#quaverBatchAnother", root).addEventListener("click", resetBatch);
     const input = q("#quaverSourceFile");
+    const folderInput = q("#quaverFolderInput");
     if (input) input.value = "";
+    if (folderInput) folderInput.value = "";
     q("#quaverFileName").textContent = "";
     window.toast?.(`${imported.length} Quaver song${imported.length === 1 ? "" : "s"} imported${failures.length ? `; ${failures.length} failed` : ""}.`, failures.length ? "error" : "info", 8000);
   }
@@ -260,13 +344,28 @@
   async function resetBatch() {
     await cancelBatch();
     const input = q("#quaverSourceFile");
+    const folderInput = q("#quaverFolderInput");
     if (input) input.value = "";
+    if (folderInput) folderInput.value = "";
     q("#quaverFileName").textContent = "";
     const root = q("#quaverImportPreview");
     if (root) {
       root.className = "quaver-preview empty";
-      root.textContent = "Choose one or more Quaver charts or mapsets to inspect difficulties, mines, timing groups, scroll data, audio, and compatibility.";
+      root.textContent = "Choose a Quaver folder or one or more charts/mapsets. Matching loose audio is imported automatically.";
     }
+  }
+
+  function installFolderPicker(zone) {
+    if (q("#quaverFolderPicker")) return;
+    const row = document.createElement("div");
+    row.id = "quaverFolderPicker";
+    row.className = "quaver-folder-picker";
+    row.innerHTML = `<label class="button small primary">Choose Quaver folder<input id="quaverFolderInput" type="file" webkitdirectory directory multiple class="hidden"></label><span class="list-sub">Includes loose .qua charts and their referenced MP3/OGG/WAV/etc. automatically.</span>`;
+    zone.after(row);
+    q("#quaverFolderInput", row).addEventListener("change", event => {
+      const files = [...(event.currentTarget.files || [])];
+      if (files.length) startBatch(files);
+    });
   }
 
   function install() {
@@ -276,40 +375,41 @@
     input.dataset.multiQuaver = "1";
     input.multiple = true;
     input.setAttribute("multiple", "");
+    input.accept = ".qua,.qp,.ogg,.mp3,.wav,.flac,.m4a,.aac,.opus,.webm,audio/*";
     input.addEventListener("change", event => {
       const chosen = [...(event.currentTarget.files || [])];
-      if (chosen.length <= 1) return;
+      const sources = quaverFiles(chosen);
+      const hasLooseMedia = chosen.some(file => AUDIO_PATTERN.test(file.name));
+      if (sources.length === 1 && chosen.length === 1 && !hasLooseMedia) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      const files = quaverFiles(chosen);
-      if (!files.length) return window.toast?.("Choose .qua or .qp files.", "error");
-      if (files.length === 1) return window.rilQuaverImport?.selectSource?.(files[0]);
-      startBatch(files);
+      if (!sources.length) return window.toast?.("Choose .qua or .qp files, or use Choose Quaver folder.", "error");
+      startBatch(chosen);
     }, true);
     zone.addEventListener("drop", event => {
       const dropped = [...(event.dataTransfer?.files || [])];
-      if (dropped.length <= 1) return;
+      const sources = quaverFiles(dropped);
+      if (sources.length <= 1 && dropped.length <= 1) return;
       event.preventDefault();
       event.stopImmediatePropagation();
       zone.classList.remove("drag");
-      const files = quaverFiles(dropped);
-      if (!files.length) return window.toast?.("Drop one or more .qua or .qp files.", "error");
-      if (files.length === 1) return window.rilQuaverImport?.selectSource?.(files[0]);
-      startBatch(files);
+      if (!sources.length) return window.toast?.("Drop one or more .qua or .qp files with optional audio.", "error");
+      startBatch(dropped);
     }, true);
     const heading = q("#quaverDropzone h3");
-    if (heading) heading.textContent = "Drop one or more .qua / .qp files";
+    if (heading) heading.textContent = "Drop Quaver charts, mapsets, and audio";
     const note = q("#quaverDropzone p");
-    if (note) note.textContent = "Select several loose charts or mapsets and import them together.";
+    if (note) note.textContent = "Select several files, or choose the entire song folder below.";
+    installFolderPicker(zone);
     const style = document.createElement("style");
     style.id = "quaverMultiImportStyles";
     style.textContent = `
-      .quaver-batch-list{display:grid;gap:10px;max-height:560px;overflow:auto;padding-right:3px}.quaver-batch-source{padding:10px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.012)}.quaver-batch-source.error{border-color:rgba(255,107,138,.25)}.quaver-batch-source-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}.quaver-batch-source-head b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.quaver-batch-source-head span:not(.pill){display:block;margin-top:2px;color:var(--muted);font-size:10px}.quaver-batch-source .quaver-difficulty-list{max-height:none;overflow:visible}.quaver-batch-preview{min-height:360px}`;
+      .quaver-folder-picker{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:9px 0 12px}.quaver-batch-list{display:grid;gap:10px;max-height:560px;overflow:auto;padding-right:3px}.quaver-batch-source{padding:10px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.012)}.quaver-batch-source.error{border-color:rgba(255,107,138,.25)}.quaver-batch-source-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}.quaver-batch-source-head b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.quaver-batch-source-head span:not(.pill){display:block;margin-top:2px;color:var(--muted);font-size:10px}.quaver-batch-source .quaver-difficulty-list{max-height:none;overflow:visible}.quaver-batch-preview{min-height:360px}.quaver-local-audio{margin:0 0 8px;padding:7px 9px;border-left:2px solid #69f0ae;background:rgba(105,240,174,.05);font-size:10px}.quaver-local-audio.missing{border-left-color:#ffd166;background:rgba(255,209,102,.05)}`;
     document.head.appendChild(style);
     return true;
   }
 
   const timer = setInterval(() => { if (install()) clearInterval(timer); }, 100);
   setTimeout(install, 0);
-  window.rilQuaverMultiImport = { startBatch, cancelBatch, resetBatch };
+  window.rilQuaverMultiImport = { startBatch, cancelBatch, resetBatch, findCompanionAudio };
 })();
