@@ -17,6 +17,9 @@ if errorlevel 1 goto :failed
 py development_polish_self_test.py
 if errorlevel 1 goto :failed
 
+py export_jobs_self_test.py
+if errorlevel 1 goto :failed
+
 py practice_polish_self_test.py
 if errorlevel 1 goto :failed
 
