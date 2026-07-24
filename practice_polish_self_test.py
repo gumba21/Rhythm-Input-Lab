@@ -75,7 +75,7 @@ def main() -> None:
 
     assert getattr(app._backend.Handler, "_ril_discord_export_installed", False)
     assert getattr(packages, "_neutral_chart_polish_installed", False)
-    assert APP_VERSION == "4.9.1-dev"
+    assert APP_VERSION == "5.0.0-dev"
     print(f"Rhythm Input Lab {APP_VERSION} Practice polish self-test passed.")
 
 
