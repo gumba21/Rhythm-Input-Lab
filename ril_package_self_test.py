@@ -132,7 +132,7 @@ def main() -> None:
 
     assert getattr(app._backend.Handler, "_ril_package_installed", False)
     assert "profile" in app._core.DEFAULTS
-    assert APP_VERSION == "4.9.1-dev"
+    assert APP_VERSION == "5.0.0-dev"
     print(f"Rhythm Input Lab {APP_VERSION} RIL package self-test passed.")
 
 
