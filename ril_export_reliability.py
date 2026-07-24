@@ -206,9 +206,10 @@ def enforce_discord_limit(result: dict[str, Any], requested: bool) -> dict[str, 
     size = int(result.get("size_bytes") or 0)
     result["discord_limit_bytes"] = discord_export_backend.DISCORD_PACKAGE_LIMIT
     result["discord_ready"] = size <= discord_export_backend.DISCORD_PACKAGE_LIMIT
-    package_path = Path(str(result.pop("_package_path", "") or ""))
+    raw_path = str(result.pop("_package_path", "") or "")
+    package_path = Path(raw_path) if raw_path else None
     if requested and not result["discord_ready"]:
-        if package_path:
+        if package_path is not None and package_path.is_file():
             package_path.unlink(missing_ok=True)
         token = str(result.get("token") or "")
         if token:
