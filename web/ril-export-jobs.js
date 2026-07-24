@@ -115,8 +115,8 @@
   }
 
   async function startExport(event) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
+    event?.preventDefault?.();
+    event?.stopImmediatePropagation?.();
     if (activeJob) return;
     const button = q("#rilExportCreate");
     if (button) {
@@ -156,10 +156,21 @@
 
   function bindExportButton() {
     const button = q("#rilExportCreate");
-    if (!button || button === boundButton) return false;
-    if (boundButton) boundButton.removeEventListener("click", startExport, true);
-    boundButton = button;
-    button.addEventListener("click", startExport, true);
+    if (!button) return false;
+    if (button.dataset.rilExportJobOwner === "1") {
+      boundButton = button;
+      return true;
+    }
+
+    // ril-packages.js installs the original synchronous exporter directly on
+    // this button. Cloning is deliberate: it removes every listener previously
+    // attached to the node, so the old blocking POST cannot run alongside the
+    // background-job exporter.
+    const replacement = button.cloneNode(true);
+    replacement.dataset.rilExportJobOwner = "1";
+    button.replaceWith(replacement);
+    replacement.addEventListener("click", startExport);
+    boundButton = replacement;
     return true;
   }
 
@@ -179,5 +190,5 @@
     .ril-job-head{display:flex;justify-content:space-between;gap:12px}.ril-job-progress{height:9px;margin:9px 0 7px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.06)}.ril-job-progress i{display:block;height:100%;background:var(--accent);transition:width .18s linear}.ril-job-actions{justify-content:flex-start;margin-top:9px}.ril-job-error{padding:9px 10px;border-left:2px solid var(--bad);background:rgba(255,107,138,.06)}`;
   document.head.appendChild(style);
   setTimeout(bindExportButton, 0);
-  window.rilExportJobs = { startExport, cancelExport, pollJob };
+  window.rilExportJobs = { startExport, cancelExport, pollJob, bindExportButton };
 })();
