@@ -4,12 +4,13 @@ Rhythm Input Lab 5.0 adds an independently implemented Quaver adapter. It accept
 
 ## Import flow
 
-1. Open **Import**.
-2. Drop a `.qp` mapset or standalone `.qua` chart.
-3. Wait for the local preview to parse every chart.
-4. Select the supported 4K–9K maps to import.
-5. Choose whether matching display names become separate copies or replace their charts.
-6. Import and open a result in Practice or Visualizer.
+1. Open **Import** and choose **Quaver**.
+2. Drop one or more `.qua` / `.qp` files, or choose an entire Quaver song folder.
+3. When a folder is selected, RIL scans its OGG, MP3, WAV, FLAC, M4A, AAC, OPUS, and WEBM files for each standalone chart's `AudioFile`.
+4. Wait for the local preview to parse every chart and show which audio was matched.
+5. Select the supported 4K–9K maps to import.
+6. Choose whether matching display names become separate copies or replace their charts.
+7. Import and open a result in Practice or Visualizer.
 
 The source and audio stay on the local machine.
 
@@ -40,19 +41,21 @@ It also preserves Quaver-specific structures as neutral events, metadata, or per
 
 The preview presents a capability report that separates direct neutral mappings, extension-stored data, approximations, and current runtime limits rather than silently flattening the source.
 
-## `.qp` mapsets and media
+## Mapsets, loose charts, and media
 
 A `.qp` file is treated as a ZIP-compatible Quaver mapset. Every `.qua` entry is inspected before anything is written.
 
-The referenced `AudioFile` is resolved:
+For `.qp` mapsets, the referenced `AudioFile` is resolved:
 
 1. relative to the `.qua` entry inside the archive
 2. as an exact archive path
 3. by unambiguous filename when only one matching entry exists
 
+For loose `.qua` charts, **Choose Quaver folder** sends the folder's charts and supported audio to the local importer. RIL resolves `AudioFile` relative to the chart first, then by exact selected path, then by an unambiguous filename. The preview identifies the matched file before import. Several loose difficulties may reference the same audio; the importer can reuse that local file rather than asking the browser to select it separately for every chart.
+
 Supported OGG, MP3, WAV, FLAC, M4A, AAC, OPUS, and WEBM audio is copied into the normal saved instrumental slot without transcoding. When several selected charts share one source, RIL uses filesystem hard links where possible and falls back to normal copies.
 
-Standalone `.qua` files do not contain their referenced media. The chart imports normally and audio can be attached afterward.
+A standalone `.qua` selected by itself still imports as a chart-only song. Select the containing folder or select the `.qua` together with its audio to import playback automatically.
 
 ## Neutral mapping
 
@@ -98,7 +101,7 @@ The `.qp` reader rejects:
 - archives without `.qua` charts
 - more than 20,000 entries
 - more than 4 GB of expanded data
-- uploaded sources larger than 2 GB
+- uploaded sources or companion audio larger than 2 GB
 - individual `.qua` charts larger than 64 MB
 - YAML aliases
 
