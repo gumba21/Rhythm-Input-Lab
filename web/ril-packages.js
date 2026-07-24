@@ -312,6 +312,7 @@
     const song = (window.state?.songs || []).find(row => row.folder === folder);
     if (!song?.has_chart) return window.toast?.("This song needs a chart before it can be exported.", "error");
     runtime.exportingFolder = folder;
+    window.rilExportJobs?.setFolder?.(folder);
     q("#rilExportTitle").textContent = `Export ${song.song_name}`;
     q("#rilExportUsername").value = username();
     const inst = Boolean(song.media?.instrumental);
@@ -328,7 +329,13 @@
     q("#rilExportModal").classList.add("open");
   }
 
-  async function exportCurrentSong() {
+  async function exportCurrentSong(event) {
+    event?.preventDefault?.();
+    event?.stopImmediatePropagation?.();
+    if (window.rilExportJobs?.startExport) {
+      window.rilExportJobs.setFolder?.(runtime.exportingFolder);
+      return window.rilExportJobs.startExport(event);
+    }
     const folder = runtime.exportingFolder;
     if (!folder) return;
     const button = q("#rilExportCreate");
@@ -421,101 +428,26 @@
   }
 
   function renderHome() {
-    const heading = q("#view-dashboard .page-head h1");
-    if (heading) heading.textContent = username() ? `Welcome back, ${username()}.` : "Welcome back.";
     const root = q("#rilRecentImports");
     if (!root) return;
-    const rows = window.state?.dashboard?.recent_imports || [];
-    root.innerHTML = rows.length ? rows.map(song => {
-      const from = song.provenance?.imported_from || "anonymous";
-      return `<article class="ril-home-card"><div><div class="song-title">${esc(song.song_name)}</div><div class="song-meta">from ${esc(from)} · ${song.chart?.key_count || "?"}K · ${formatDuration(song.chart?.duration_ms)}</div></div><div class="actions"><button class="button small primary" data-ril-practice="${esc(song.folder)}">Practice</button><button class="button small" data-ril-viz="${esc(song.folder)}">Visualizer</button></div></article>`;
-    }).join("") : `<div class="empty">Songs imported from friends will appear here with their sharing username.</div>`;
+    const songs = (window.state?.songs || []).filter(song => song.provenance?.imported_from).slice(0, 8);
+    root.innerHTML = songs.length
+      ? songs.map(song => `<article><div><b>${esc(song.song_name)}</b><span>${esc(song.provenance.imported_from || "Unknown source")}${song.provenance.original_charter ? ` · charter ${esc(song.provenance.original_charter)}` : ""}</span></div><div class="actions"><button class="button small primary" data-ril-practice="${esc(song.folder)}">Practice</button><button class="button small" data-ril-viz="${esc(song.folder)}">Visualizer</button></div></article>`).join("")
+      : `<div class="empty">Imported .ril songs will appear here.</div>`;
     qa("[data-ril-practice]", root).forEach(button => button.addEventListener("click", () => openPractice(button.dataset.rilPractice)));
     qa("[data-ril-viz]", root).forEach(button => button.addEventListener("click", () => window.loadVisualizer?.(button.dataset.rilViz, null)));
   }
 
-  function enhanceSongCards() {
-    qa(".song-card[data-song-folder]").forEach(card => {
-      const song = (window.state?.songs || []).find(row => row.folder === card.dataset.songFolder);
-      const from = song?.provenance?.imported_from;
-      if (!from || q(".ril-from-pill", card)) return;
-      const row = q(".pill-row", card);
-      if (!row) return;
-      const pill = document.createElement("span");
-      pill.className = "pill ril-from-pill";
-      pill.textContent = `from ${from}`;
-      row.appendChild(pill);
-    });
-  }
-
-  function installRenderHooks() {
-    if (window.__rilRenderHooks) return;
-    window.__rilRenderHooks = true;
-    if (typeof renderDashboard === "function") {
-      const originalDashboard = renderDashboard;
-      renderDashboard = function(...args) {
-        const result = originalDashboard.apply(this, args);
-        renderHome();
-        setTimeout(enhanceSongCards, 0);
-        return result;
-      };
-      window.renderDashboard = renderDashboard;
-    }
-    if (typeof renderSongs === "function") {
-      const originalSongs = renderSongs;
-      renderSongs = function(...args) {
-        const result = originalSongs.apply(this, args);
-        setTimeout(enhanceSongCards, 0);
-        return result;
-      };
-      window.renderSongs = renderSongs;
-    }
-    if (typeof renderSettings === "function") {
-      const originalSettings = renderSettings;
-      renderSettings = function(...args) {
-        const result = originalSettings.apply(this, args);
-        renderIdentity();
-        return result;
-      };
-      window.renderSettings = renderSettings;
-    }
-  }
-
-  function installStyles() {
-    if (q("#rilPackageStyles")) return;
-    const style = document.createElement("style");
-    style.id = "rilPackageStyles";
-    style.textContent = `
-      .ril-package-panel{margin-bottom:16px}.ril-import-grid{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(340px,1.2fr);gap:14px;margin-top:14px}.ril-dropzone{min-height:260px}.ril-file-icon{display:inline-grid;place-items:center;width:56px;height:56px;margin-bottom:8px;border:1px solid var(--line);border-radius:14px;background:rgba(117,230,255,.08);font-weight:950;letter-spacing:.08em;color:var(--accent)}
-      .ril-preview{min-height:260px;padding:15px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.018)}.ril-preview.empty{display:grid;place-items:center;text-align:center;color:var(--muted)}.ril-progress-head,.ril-preview-title,.ril-export-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}.ril-progress{height:8px;margin:14px 0 8px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.06)}.ril-progress i{display:block;height:100%;background:var(--accent)}.ril-preview-title h2,.ril-export-head h2{margin:3px 0 4px}.ril-preview-title p,.ril-export-head p{margin:0;color:var(--muted);font-size:12px}.ril-preview-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:13px 0}.ril-preview-metrics div{padding:9px;border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,.02)}.ril-preview-metrics span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}.ril-preview-metrics b{display:block;margin-top:3px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ril-warning{margin-top:8px;padding:8px 10px;border:1px solid rgba(255,209,102,.25);border-radius:9px;background:rgba(255,209,102,.07);font-size:11px;color:var(--muted)}.ril-import-choice{margin:12px 0}.ril-import-choice label{display:flex;flex-direction:column;gap:5px;font-size:10px;color:var(--muted)}
-      .ril-export-backdrop.open{display:grid}.ril-export-dialog{width:min(620px,94vw)}.ril-export-options{display:grid;gap:8px;margin:14px 0}.ril-export-options>label{display:flex;align-items:flex-start;gap:10px;padding:11px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.018)}.ril-export-options input{margin-top:3px}.ril-export-options span{display:flex;flex-direction:column}.ril-export-options small{margin-top:2px;color:var(--muted)}.ril-provenance-line{margin-top:3px;color:var(--muted);font-size:12px}
-      .ril-home-imports{margin-top:16px}.ril-home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:9px}.ril-home-card{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.018)}.ril-home-card .actions{flex:none}.ril-from-pill{border-color:rgba(117,230,255,.24);color:var(--accent)}
-      @media(max-width:850px){.ril-import-grid{grid-template-columns:1fr}.ril-preview-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.ril-home-card{align-items:flex-start;flex-direction:column}}
-    `;
-    document.head.appendChild(style);
-  }
-
-  function boot() {
-    installStyles();
+  function install() {
     installExportModal();
+    const ready = installImportPanel() && installIdentitySettings();
     installSongExportHook();
-    installRenderHooks();
-    const timer = setInterval(() => {
-      const ready = installIdentitySettings() && installImportPanel() && installHome();
-      renderIdentity();
-      renderHome();
-      enhanceSongCards();
-      if (ready) clearInterval(timer);
-    }, 100);
-    setTimeout(() => {
-      installIdentitySettings();
-      installImportPanel();
-      installHome();
-      renderHome();
-      enhanceSongCards();
-    }, 0);
+    renderIdentity();
+    renderHome();
+    return ready;
   }
 
-  window.rilPackages = { openExport, selectPackage, saveUsername, renderHome };
-  boot();
+  const timer = setInterval(() => { if (install()) clearInterval(timer); }, 100);
+  setTimeout(install, 0);
+  window.rilPackages = { openExport, selectPackage, cancelUpload, renderHome };
 })();
