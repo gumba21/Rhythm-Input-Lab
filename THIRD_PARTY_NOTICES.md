@@ -1,5 +1,13 @@
 # Third-party notices
 
+## Friday Night Funkin'
+
+The Practice engine backpolish was informed by the user-supplied **Friday Night Funkin'** source, particularly its conductor delta between audio samples, precise press/release timestamps, static/press/confirm receptor states, and sustain presentation.
+
+Rhythm Input Lab's Practice runtime remains an independently written JavaScript implementation for neutral 4K–9K charts. It does not bundle Friday Night Funkin' source files, characters, music, artwork, branding, or game assets.
+
+The referenced Friday Night Funkin' source code is Copyright 2020–2024 The Funkin' Crew Inc. and licensed under the Apache License 2.0. A copy of the supplied source license is included at `third_party/Funkin_LICENSE.md`. Friday Night Funkin' and its logo are trademarks of The Funkin' Crew Inc. Rhythm Input Lab is not affiliated with or endorsed by The Funkin' Crew Inc.
+
 ## FunkinChart
 
 The FNF chart-import design was informed by the uploaded **Funkin' Web Chart / FunkinChart** project by jsm925, particularly its handling of legacy FNF sections, `mustHitSection`, note-lane halves, sustains, and dynamic BPM sections.
