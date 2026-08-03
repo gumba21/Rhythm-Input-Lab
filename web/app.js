@@ -25,18 +25,20 @@
                           loadScript('/practice-library-menu.js', () => {
                             loadScript('/practice-save.js', () => {
                               loadScript('/practice-engine-backpolish.js', () => {
-                                loadScript('/song-media.js', () => {
-                                  loadScript('/analysis.js', () => {
-                                    loadScript('/analysis-structure-bridge.js', () => {
-                                      loadScript('/analysis-unified.js', () => {
-                                        loadScript('/analysis-language-polish.js', () => {
-                                          loadScript('/song-picker.js', () => {
-                                            loadScript('/ril-packages.js', () => {
-                                              loadScript('/ril-export-polish.js', () => {
-                                                loadScript('/ril-export-v2.js', () => {
-                                                  loadScript('/osu-import.js', () => {
-                                                    loadScript('/quaver-import.js', () => {
-                                                      loadScript('/quaver-multi-import.js', () => loadScript('/import-center.js'));
+                                loadScript('/practice-engine-release-reconcile.js', () => {
+                                  loadScript('/song-media.js', () => {
+                                    loadScript('/analysis.js', () => {
+                                      loadScript('/analysis-structure-bridge.js', () => {
+                                        loadScript('/analysis-unified.js', () => {
+                                          loadScript('/analysis-language-polish.js', () => {
+                                            loadScript('/song-picker.js', () => {
+                                              loadScript('/ril-packages.js', () => {
+                                                loadScript('/ril-export-polish.js', () => {
+                                                  loadScript('/ril-export-v2.js', () => {
+                                                    loadScript('/osu-import.js', () => {
+                                                      loadScript('/quaver-import.js', () => {
+                                                        loadScript('/quaver-multi-import.js', () => loadScript('/import-center.js'));
+                                                      });
                                                     });
                                                   });
                                                 });
