@@ -32,6 +32,8 @@ The existing Practice handler still creates the local press and note state. The 
 - non-ghost extra inputs are retained explicitly
 - the live Practice statistics are rebuilt from note states after a correction
 
+`practice-engine-release-reconcile.js` performs the release-side correction after the legacy key-up handler has closed the press. It finds the sustain through the press ID retained in the note state, corrects `held_ms`, and decides between an early hold drop and a completed release using the same configured outer window.
+
 The later full statistics-unification pass will replace this local rebuild with the same shared result document used by Visualizer, Analysis, saved attempts, and reports.
 
 ## Rendering
@@ -50,6 +52,20 @@ The final canvas pass redraws the playfield after the legacy renderer, using the
 ## Focus and pause behavior
 
 Losing focus or hiding the page pauses Practice, closes open press durations at the current conductor time, releases visual keys, clears active sustain ownership, and leaves no key visually stuck.
+
+## Hands-on test matrix
+
+The development build should be exercised with:
+
+- tap-heavy, jack-heavy, chord-heavy, and dense-stream charts
+- short and long sustains, early releases, near-end releases, overlapping holds, and repeated notes on one lane
+- 50%, 75%, 90%, 100%, and 125% speed
+- instrumental-only, vocals-only, both tracks, and no-audio playback
+- fresh starts, retries, range starts, loop restarts, pause/resume, and repeated seeking
+- deliberate browser lag, resizing, tab changes, focus loss, and returning from a hidden page
+- FNF, osu!mania, Quaver, and portable RIL sources across 4K–9K
+
+The visible `Precise input · conductor clock` badge confirms that the backpolish layer loaded.
 
 ## Source reference
 
