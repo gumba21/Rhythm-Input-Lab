@@ -98,20 +98,30 @@
 
 ## Current development milestone
 
-### 5.0 — Universal adapter and conversion boundary
+### 5.0 — Universal adapter and Practice engine boundary
 
 Completed in the current development branch:
 
 - Quaver standalone `.qua` and multi-difficulty `.qp` importing
 - taps, long notes, mines, BPM, signatures, SV, scroll-speed factors, timing groups, bookmarks, samples, hit sounds, editor layers, and source metadata
-- automatic `.qp` audio discovery and lossless saved-audio import
+- automatic `.qp` and loose-folder audio discovery with lossless saved-audio import
 - source-format capability reports separating preserved, extension-stored, approximated, and currently unrendered features
 - active-actions-per-second import measurement without adopting Quaver's difficulty or scoring systems
 - chunked upload, map selection, duplicate handling, provenance, archive protections, and dedicated parser fixtures
 - immediate neutral RIL use in Practice, Visualizer, Analysis, attempts, and `.ril` sharing
+- FNF-informed Practice conductor clock that extrapolates smoothly between audio samples
+- input-event timestamp reconciliation instead of relying only on the previous animation frame
+- time-derived note positions, bounded audio drift correction, seek re-anchoring, and lag-spike recovery
+- separate receptor press and confirmed-hit feedback
+- sustain clipping at the receptor, authored tail endpoints, precise release reconciliation, hold-complete cleanup, and visible early-release state
+- focus-loss pausing that closes presses and prevents stuck keys
+- dedicated Practice-engine architecture notes, licensing notices, and smoke coverage
 
 Remaining 5.0 work:
 
+- hands-on latency, dense-pattern, sustain, speed-change, looping, pause/resume, and focus-loss testing across several machines
+- one canonical result document shared by live Practice, its result screen, saved attempts, Visualizer, Analysis, and reports
+- remove the remaining Practice-local accuracy/statistics rebuild after shared-result parity is proven
 - StepMania `.sm` / `.ssc` import into the neutral RIL model
 - shared adapter contracts and capability vocabulary across FNF, osu!mania, Quaver, StepMania, and RIL
 - source-neutral metadata and media-discovery cleanup
