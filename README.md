@@ -28,6 +28,7 @@ The server binds only to `127.0.0.1`. Charts, recordings, locally attached audio
 - automatic/manual replay alignment with one cached result shared by Visualizer and Analysis
 - configurable Sick, Good, Bad, Shit, miss, safe-frame, ghost-tapping, hold, and hazard behavior
 - playable 4K–9K Practice with synchronized count-ins, audio, speed controls, precise ranges, looping, holds, hazards, saved setups, goals, collections, history, and full-song attempt saving
+- FNF-informed Practice engine backpolish with an audio-anchored conductor clock, precise event timestamps, bounded drift correction, time-derived note movement, receptor press/confirm feedback, sustain clipping, precise hold releases, and focus-loss recovery
 - descriptive performance analysis for sections, lanes, timing, consistency, strict rhythm patterns, likely miss causes, and attempt comparison
 - descriptive Practice run data including mean offset, timing spread, median absolute offset, hit rate, chart density, FC state, session totals, and local-history totals
 - saved per-song instrumental and vocals playback with byte-range seeking
@@ -42,6 +43,8 @@ Reconstructed judgments are estimates derived from physical input. Rhythm Input 
 
 Practice displays a synchronized `3 · 2 · 1 · GO!` count-in on fresh starts, retries, and loop restarts. Resuming a paused run remains immediate.
 
+The current development build timestamps lane presses and releases from their browser input events, then reconciles them against the conductor clock. Note movement remains derived from authored note time rather than accumulated frame movement. Losing focus pauses the run and releases held visual/input state instead of leaving lanes stuck.
+
 Common shortcuts:
 
 - `Enter`: start a run
@@ -52,6 +55,8 @@ Common shortcuts:
 - `[` / `]`: seek one second while paused; hold Shift for five seconds
 - `Home` / `End`: jump to the selected range edges
 - `,` / `.`: previous/next timing section
+
+See [`PRACTICE_ENGINE_BACKPOLISH.md`](PRACTICE_ENGINE_BACKPOLISH.md) for the conductor, timestamp reconciliation, sustain, and rendering design.
 
 ## Import Quaver
 
@@ -94,34 +99,40 @@ The package and compact neutral chart specification is documented in [`RIL_FORMA
 
 ```text
 .
-├── app.py                         version-aware GUI launcher
-├── backend.py                     local browser GUI backend
-├── rhythm_input_lab_core.py       recorder and analysis core
-├── fnf_importer.py                FNF normalization and compatibility adapter
-├── osu_importer.py                osu!mania .osu/.osz parser and neutral adapter
-├── osu_import_backend.py          chunked osu!mania preview/import backend
-├── osu_importer_self_test.py      osu!mania parser and archive safety tests
-├── quaver_importer.py             Quaver .qua/.qp parser and neutral adapter
-├── quaver_import_backend.py       chunked Quaver preview/import backend
-├── quaver_loose_audio.py          loose-folder audio upload and import adapter
-├── quaver_importer_self_test.py   Quaver parser and archive safety tests
-├── ril_package_backend.py         neutral RIL chart and portable package backend
-├── ril_export_reliability.py      persistent atomic package writer
-├── ril_export_jobs.py             local background export queue and progress API
-├── discord_export_backend.py      exact Discord package-size enforcement
-├── neutral_chart_polish.py        explicit neutral timing-section positions
-├── export_jobs_self_test.py       export queue and folder-audio regression tests
-├── practice_polish_self_test.py   Practice polish and Discord export tests
-├── RIL_FORMAT.md                  portable package and compact chart specification
-├── OSU_IMPORT.md                  osu!mania import behavior and limitations
-├── QUAVER_IMPORT.md               Quaver import behavior and limitations
-├── THIRD_PARTY_NOTICES.md         source references, licenses, and attribution
-├── self_test.py                   application smoke tests
-├── VERSION                        single application version source
-├── web/                           browser interface and atlases
-├── run.bat                        start the GUI
-├── run-console.bat                start the console fallback
-└── run-tests.bat                  run the smoke tests
+├── app.py                              version-aware GUI launcher
+├── backend.py                          local browser GUI backend
+├── rhythm_input_lab_core.py            recorder and analysis core
+├── fnf_importer.py                     FNF normalization and compatibility adapter
+├── osu_importer.py                     osu!mania .osu/.osz parser and neutral adapter
+├── osu_import_backend.py               chunked osu!mania preview/import backend
+├── osu_importer_self_test.py           osu!mania parser and archive safety tests
+├── quaver_importer.py                  Quaver .qua/.qp parser and neutral adapter
+├── quaver_import_backend.py            chunked Quaver preview/import backend
+├── quaver_loose_audio.py               loose-folder audio upload and import adapter
+├── quaver_importer_self_test.py        Quaver parser and archive safety tests
+├── ril_package_backend.py              neutral RIL chart and portable package backend
+├── ril_export_reliability.py           persistent atomic package writer
+├── ril_export_jobs.py                  local background export queue and progress API
+├── discord_export_backend.py           exact Discord package-size enforcement
+├── neutral_chart_polish.py             explicit neutral timing-section positions
+├── export_jobs_self_test.py            export queue and folder-audio regression tests
+├── practice_polish_self_test.py        Practice polish and Discord export tests
+├── practice_engine_backpolish_self_test.py
+│                                        Practice clock/input/release smoke checks
+├── PRACTICE_ENGINE_BACKPOLISH.md       Practice engine architecture notes
+├── RIL_FORMAT.md                       portable package and compact chart specification
+├── OSU_IMPORT.md                       osu!mania import behavior and limitations
+├── QUAVER_IMPORT.md                    Quaver import behavior and limitations
+├── THIRD_PARTY_NOTICES.md              source references, licenses, and attribution
+├── self_test.py                        application smoke tests
+├── VERSION                             single application version source
+├── web/
+│   ├── practice-engine-backpolish.js   precise conductor, input, and final renderer
+│   └── practice-engine-release-reconcile.js
+│                                        precise sustain-release correction
+├── run.bat                             start the GUI
+├── run-console.bat                     start the console fallback
+└── run-tests.bat                       run the smoke tests
 ```
 
 Runtime songs, attempts, reports, saved audio, and normalized charts are stored in the output folder selected in Settings, not in the repository.
