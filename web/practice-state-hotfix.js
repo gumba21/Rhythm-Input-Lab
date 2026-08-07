@@ -164,6 +164,9 @@
   document.addEventListener("click", event => {
     const button = event.target.closest?.("#practiceStartButton,#practiceRetryButton");
     if (!button || !practiceVisible() || !countdownEnabled()) return;
+    // Practice Polish finishes its count-in with button.click(). That synthetic
+    // click must reach the base engine; re-catching it here restarts the count-in.
+    if (!event.isTrusted) return;
     const p = practice();
     if (!p?.bundle || p.loading || songLoading(p)) return;
     event.preventDefault();
