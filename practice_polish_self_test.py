@@ -73,6 +73,14 @@ def main() -> None:
         else:
             raise AssertionError("Oversized Discord package was accepted")
 
+    web = Path(__file__).parent / "web"
+    polish_js = (web / "practice-polish.js").read_text(encoding="utf-8")
+    hotfix_js = (web / "practice-state-hotfix.js").read_text(encoding="utf-8")
+    app_js = (web / "app.js").read_text(encoding="utf-8")
+    assert "runtime.bypassClick = true" in polish_js
+    assert "if (!event.isTrusted) return;" in hotfix_js
+    assert app_js.index("/practice-polish.js") < app_js.index("/practice-state-hotfix.js") < app_js.index("/practice.js")
+
     assert getattr(app._backend.Handler, "_ril_discord_export_installed", False)
     assert getattr(packages, "_neutral_chart_polish_installed", False)
     assert APP_VERSION == "5.0.0-dev"
