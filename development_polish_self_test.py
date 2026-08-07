@@ -156,10 +156,14 @@ def main() -> None:
     assert "/api/ril/export/start" in export_ui
     assert "stopImmediatePropagation" in export_ui
     assert "rilExportV2Modal" in export_ui
-    for script in ["/quaver-multi-import.js", "/import-center.js", "/ril-export-v2.js"]:
+    for script in [
+        "/quaver-multi-import.js",
+        "/import-center.js",
+        "/ril-export-v2.js",
+        "/ril-export-reliability.js",
+        "/ril-export-jobs.js",
+    ]:
         assert script in app_js
-    assert "/ril-export-jobs.js" not in app_js
-    assert "/ril-export-reliability.js" not in app_js
 
     assert getattr(app._backend.Handler, "_ril_export_reliability_installed", False)
     assert getattr(app._backend.Handler, "_ril_export_jobs_installed", False)
