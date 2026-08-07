@@ -13,9 +13,70 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
       - name: Compile Python
-        run: python -m py_compile app.py backend.py console.py rhythm_input_lab_core.py fnf_importer.py self_test.py ril_version.py
+        run: |
+          python -m py_compile \
+            app.py asset_backend.py backend.py bundle_compat.py console.py discord_export_backend.py \
+            rhythm_input_lab_core.py fnf_importer.py fnf_codename_import.py fnf_batch_backend.py \
+            fnf_batch_import.py fnf_batch_import_self_test.py media_backend.py neutral_chart_polish.py \
+            osu_importer.py osu_import_backend.py osu_importer_self_test.py quaver_importer.py \
+            quaver_import_backend.py quaver_importer_self_test.py quaver_loose_audio.py \
+            practice_attempt_backend.py practice_polish_self_test.py practice_engine_backpolish_self_test.py \
+            reports_backend.py ril_export_reliability.py ril_export_jobs.py ril_export_thread_guard.py \
+            ril_package_backend.py ril_package_self_test.py development_polish_self_test.py \
+            export_jobs_self_test.py self_test.py ril_version.py
       - name: Check JavaScript syntax
-        run: node --check web/app.js && node --check web/visualizer.js
-      - name: Run self-test
-        run: python self_test.py
+        run: |
+          node --check web/app.js
+          node --check web/visualizer.js
+          node --check web/global-bridge.js
+          node --check web/shared-results.js
+          node --check web/visualizer-preferences.js
+          node --check web/practice-polish.js
+          node --check web/practice-state-hotfix.js
+          node --check web/practice.js
+          node --check web/practice-hotfix.js
+          node --check web/practice-tools.js
+          node --check web/practice-comfort.js
+          node --check web/practice-library-menu.js
+          node --check web/practice-save.js
+          node --check web/practice-engine-backpolish.js
+          node --check web/practice-engine-release-reconcile.js
+          node --check web/song-media.js
+          node --check web/multi-vocals.js
+          node --check web/analysis.js
+          node --check web/analysis-structure-bridge.js
+          node --check web/analysis-unified.js
+          node --check web/analysis-language-polish.js
+          node --check web/song-picker.js
+          node --check web/ril-packages.js
+          node --check web/ril-export-polish.js
+          node --check web/ril-export-v2.js
+          node --check web/ril-export-reliability.js
+          node --check web/ril-export-jobs.js
+          node --check web/osu-import.js
+          node --check web/quaver-import.js
+          node --check web/quaver-multi-import.js
+          node --check web/import-center.js
+          node --check web/fnf-folder-discovery.js
+          node --check web/fnf-batch-import.js
+      - name: Run self-tests
+        run: |
+          python self_test.py > self-test.log 2>&1
+          python ril_package_self_test.py >> self-test.log 2>&1
+          python osu_importer_self_test.py >> self-test.log 2>&1
+          python quaver_importer_self_test.py >> self-test.log 2>&1
+          python fnf_batch_import_self_test.py >> self-test.log 2>&1
+          python development_polish_self_test.py >> self-test.log 2>&1
+          python export_jobs_self_test.py >> self-test.log 2>&1
+          python practice_polish_self_test.py >> self-test.log 2>&1
+          python practice_engine_backpolish_self_test.py >> self-test.log 2>&1
+      - name: Upload self-test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: self-test-log
+          path: self-test.log
+          if-no-files-found: ignore
