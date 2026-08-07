@@ -37,10 +37,14 @@
                                                   loadScript('/ril-packages.js', () => {
                                                     loadScript('/ril-export-polish.js', () => {
                                                       loadScript('/ril-export-v2.js', () => {
-                                                        loadScript('/osu-import.js', () => {
-                                                          loadScript('/quaver-import.js', () => {
-                                                            loadScript('/quaver-multi-import.js', () => {
-                                                              loadScript('/import-center.js', () => loadScript('/fnf-batch-import.js'));
+                                                        loadScript('/ril-export-reliability.js', () => {
+                                                          loadScript('/ril-export-jobs.js', () => {
+                                                            loadScript('/osu-import.js', () => {
+                                                              loadScript('/quaver-import.js', () => {
+                                                                loadScript('/quaver-multi-import.js', () => {
+                                                                  loadScript('/import-center.js', () => loadScript('/fnf-batch-import.js'));
+                                                                });
+                                                              });
                                                             });
                                                           });
                                                         });
