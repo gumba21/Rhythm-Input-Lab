@@ -5,6 +5,7 @@ import rhythm_input_lab_core as _core
 from asset_backend import install_note_atlas_endpoint
 from bundle_compat import install_bundle_compat
 from discord_export_backend import install_discord_export_endpoint
+from fnf_batch_import import install_fnf_batch_import
 from media_backend import install_song_media_endpoint
 from neutral_chart_polish import install_neutral_chart_polish
 from osu_import_backend import install_osu_import_endpoint
@@ -30,6 +31,7 @@ install_bundle_compat()
 install_report_endpoint()
 install_note_atlas_endpoint(_backend)
 install_song_media_endpoint(_backend)
+install_fnf_batch_import(_backend)
 install_practice_attempt_endpoint(_backend)
 install_ril_package_endpoint(_backend)
 install_ril_export_reliability(_backend)

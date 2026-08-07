@@ -14,6 +14,9 @@ if errorlevel 1 goto :failed
 py quaver_importer_self_test.py
 if errorlevel 1 goto :failed
 
+py fnf_batch_import_self_test.py
+if errorlevel 1 goto :failed
+
 py development_polish_self_test.py
 if errorlevel 1 goto :failed
 
