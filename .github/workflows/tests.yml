@@ -26,7 +26,7 @@ jobs:
             practice_attempt_backend.py practice_polish_self_test.py practice_engine_backpolish_self_test.py \
             reports_backend.py ril_export_reliability.py ril_export_jobs.py ril_export_thread_guard.py \
             ril_package_backend.py ril_package_self_test.py development_polish_self_test.py \
-            export_jobs_self_test.py self_test.py ril_version.py
+            export_jobs_self_test.py workspace_ui_self_test.py self_test.py ril_version.py
       - name: Check JavaScript syntax
         run: |
           node --check web/app.js
@@ -40,7 +40,6 @@ jobs:
           node --check web/practice-hotfix.js
           node --check web/practice-tools.js
           node --check web/practice-comfort.js
-          node --check web/practice-library-menu.js
           node --check web/practice-save.js
           node --check web/practice-engine-backpolish.js
           node --check web/practice-engine-release-reconcile.js
@@ -62,6 +61,7 @@ jobs:
           node --check web/import-center.js
           node --check web/fnf-folder-discovery.js
           node --check web/fnf-batch-import.js
+          node --check web/workspace-ui.js
       - name: Run self-tests
         run: |
           python self_test.py > self-test.log 2>&1
@@ -73,6 +73,7 @@ jobs:
           python export_jobs_self_test.py >> self-test.log 2>&1
           python practice_polish_self_test.py >> self-test.log 2>&1
           python practice_engine_backpolish_self_test.py >> self-test.log 2>&1
+          python workspace_ui_self_test.py >> self-test.log 2>&1
       - name: Upload self-test log
         if: always()
         uses: actions/upload-artifact@v4
