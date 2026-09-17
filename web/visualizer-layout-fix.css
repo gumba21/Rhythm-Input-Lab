@@ -1,0 +1,23 @@
+/* Visualizer disclosure layout repair.
+   workspace-ui.js inserts #visualizerMoreControls as the second child of the
+   existing five-row visualizer panel. Account for that row explicitly so the
+   audio status cannot inherit the playfield's old minmax(430px, 1fr) track. */
+
+#view-visualizer .visualizer-panel:has(> #visualizerMoreControls) {
+  grid-template-rows: auto auto auto auto minmax(430px, 1fr) auto;
+}
+
+#visualizerMoreControls {
+  min-height: 0;
+  height: auto;
+}
+
+/* The disclosure body has an inline flex declaration. Make closed ownership
+   explicit so it never reserves layout space regardless of UA <details> CSS. */
+#visualizerMoreControls:not([open]) > .visualizer-more-body {
+  display: none !important;
+}
+
+#visualizerMoreControls[open] > .visualizer-more-body {
+  display: flex !important;
+}
