@@ -8,9 +8,7 @@
     return String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
   }
 
-  function api() {
-    return window.rilFnfFolderDiscovery;
-  }
+  function api() { return window.rilFnfFolderDiscovery; }
 
   function setProgress(text) {
     const node = q("#fnfBatchProgress");
@@ -28,7 +26,7 @@
     const charts = runtime.groups.reduce((total, group) => total + group.charts.length, 0);
     const selected = selectedCharts().length;
     button.disabled = runtime.importing || selected === 0;
-    q("#fnfBatchSummary").textContent = runtime.groups.length ? `${runtime.groups.length} songs · ${charts} charts · ${selected} selected` : "Choose a mod, songs, or assets folder.";
+    q("#fnfBatchSummary").textContent = runtime.groups.length ? `${runtime.groups.length} songs · ${charts} charts · ${selected} selected` : "Choose a mod, songs, assets, or individual song folder.";
     if (!runtime.groups.length) {
       root.innerHTML = '<div class="empty">RIL will detect Codename, legacy, and Psych charts plus nearby audio.</div>';
       return;
@@ -71,17 +69,7 @@
     for (let index = 0; index < total; index += 1) {
       const chunk = file.slice(index * chunkSize, Math.min(file.size, (index + 1) * chunkSize));
       setProgress(`${label} · ${Math.round((index + 1) / total * 100)}%`);
-      await jsonApi("/api/fnf-batch/media-chunk", {
-        upload_id: uploadId,
-        index,
-        total,
-        data: await chunkBase64(chunk),
-        filename: file.name,
-        folders,
-        role,
-        stem_id: stemId,
-        primary,
-      });
+      await jsonApi("/api/fnf-batch/media-chunk", { upload_id: uploadId, index, total, data: await chunkBase64(chunk), filename: file.name, folders, role, stem_id: stemId, primary });
     }
   }
 
@@ -96,17 +84,10 @@
       for (const { group, chart } of rows) {
         setProgress(`Importing ${imported + 1}/${rows.length}: ${chart.importName}`);
         const result = await jsonApi("/api/fnf-batch/import", { chart: {
-          filename: chart.file.name,
-          relative_path: chart.path,
-          content: chart.content,
-          import_name: chart.importName,
-          song_name: group.songName,
-          difficulty: chart.difficulty,
-          group_key: group.groupKey,
-          events_filename: group.events?.file.name,
-          events_content: group.events?.content,
-          metadata_filename: group.metadata?.file.name,
-          metadata_content: group.metadata?.content,
+          filename: chart.file.name, relative_path: chart.path, content: chart.content, import_name: chart.importName,
+          song_name: group.songName, difficulty: chart.difficulty, group_key: group.groupKey,
+          events_filename: group.events?.file.name, events_content: group.events?.content,
+          metadata_filename: group.metadata?.file.name, metadata_content: group.metadata?.content,
         }});
         const folder = result?.song?.folder;
         if (folder) {
@@ -173,7 +154,7 @@
         const stats = api().chartStats(parsed);
         setTimeout(() => {
           const preview = q("#importPreview");
-          if (preview) preview.innerHTML = `<div class="stat-grid"><div class="stat-chip"><span>Detected format</span><b>Codename</b></div><div class="stat-chip"><span>Raw notes</span><b>${stats.notes.toLocaleString()}</b></div><div class="stat-chip"><span>Strum lines</span><b>${(parsed.strumLines || []).length}</b></div><div class="stat-chip"><span>Events</span><b>${stats.events.toLocaleString()}</b></div></div><div class="list-sub" style="margin-top:10px">For automatic song naming and audio discovery, use the batch folder importer below.</div>`;
+          if (preview) preview.innerHTML = `<div class="stat-grid"><div class="stat-chip"><span>Detected format</span><b>Codename</b></div><div class="stat-chip"><span>Raw notes</span><b>${stats.notes.toLocaleString()}</b></div><div class="stat-chip"><span>Strum lines</span><b>${(parsed.strumLines || []).length}</b></div><div class="stat-chip"><span>Events</span><b>${stats.events.toLocaleString()}</b></div></div><div class="list-sub" style="margin-top:10px">Use Folder mode for automatic song naming and audio discovery.</div>`;
         }, 0);
       } catch (_) {}
     });
@@ -182,17 +163,18 @@
   function installUi() {
     const view = q("#view-import");
     if (!view || q("#fnfBatchImporter")) return false;
+    const mount = q("#fnfFolderImportMount") || q("#fnfImportPanel") || view;
     const node = document.createElement("div");
     node.id = "fnfBatchImporter";
     node.className = "card pad fnf-batch-importer";
-    node.innerHTML = `<div class="section-title fnf-batch-title"><div><div class="eyebrow">Folder-first FNF import</div><h2>Import a mod or song collection.</h2><p>Select the highest useful folder. RIL scans it for Codename, legacy, and Psych charts, then matches nearby instrumental and vocal stems.</p></div><label class="button primary">Choose folder<input id="fnfBatchFolder" type="file" webkitdirectory directory multiple class="hidden"></label></div><div class="fnf-batch-toolbar"><b id="fnfBatchSummary">Choose a mod, songs, or assets folder.</b><button id="fnfBatchImportButton" class="button primary" disabled>Import selected</button></div><div id="fnfBatchProgress" class="list-sub">Nothing selected.</div><div id="fnfBatchPreview" class="fnf-batch-preview"><div class="empty">RIL will detect Codename, legacy, and Psych charts plus nearby audio.</div></div>`;
-    const grid = q("#view-import > .grid.two") || q("#view-import .grid.two");
-    (grid || view).after(node);
+    node.innerHTML = `<div class="section-title fnf-batch-title"><div><div class="eyebrow">Folder-first import</div><h2>Import a mod or song collection</h2><p>Select the highest useful folder. RIL scans it for Codename, legacy, and Psych charts, then matches nearby instrumental and vocal stems.</p></div><label class="button primary">Choose folder<input id="fnfBatchFolder" type="file" webkitdirectory directory multiple class="hidden"></label></div><div class="fnf-batch-toolbar"><b id="fnfBatchSummary">Choose a mod, songs, assets, or song folder.</b><button id="fnfBatchImportButton" class="button primary" disabled>Import selected</button></div><div id="fnfBatchProgress" class="list-sub">Nothing selected.</div><div id="fnfBatchPreview" class="fnf-batch-preview"><div class="empty">RIL will detect Codename, legacy, and Psych charts plus nearby audio.</div></div>`;
+    mount.innerHTML = "";
+    mount.appendChild(node);
     q("#fnfBatchFolder").addEventListener("change", chooseFolder);
     q("#fnfBatchImportButton").addEventListener("click", importBatch);
     const style = document.createElement("style");
     style.id = "fnfBatchImportStyles";
-    style.textContent = `.fnf-batch-importer{margin-top:16px}.fnf-batch-title{align-items:flex-start}.fnf-batch-title p{max-width:760px;margin:7px 0 0}.fnf-batch-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.018)}.fnf-batch-preview{display:grid;gap:10px;margin-top:12px;max-height:620px;overflow:auto}.fnf-batch-group{border:1px solid var(--line);border-radius:13px;overflow:hidden;background:rgba(255,255,255,.012)}.fnf-batch-group-head{display:flex;justify-content:space-between;gap:12px;padding:11px 12px;background:rgba(255,255,255,.025)}.fnf-batch-group-head>div:first-child{display:flex;flex-direction:column;gap:2px}.fnf-batch-group-head span,.fnf-batch-chart small{font-size:10px;color:var(--muted)}.fnf-batch-media{display:flex;flex-direction:column;text-align:right;max-width:55%}.fnf-batch-charts{display:grid}.fnf-batch-chart{display:grid;grid-template-columns:auto minmax(150px,.8fr) minmax(220px,1.2fr);align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--line)}.fnf-batch-chart>span{display:flex;flex-direction:column}.fnf-batch-name{width:100%}@media(max-width:760px){.fnf-batch-group-head,.fnf-batch-toolbar{align-items:flex-start;flex-direction:column}.fnf-batch-media{max-width:100%;text-align:left}.fnf-batch-chart{grid-template-columns:auto 1fr}.fnf-batch-name{grid-column:2}}`;
+    style.textContent = `.fnf-batch-importer{margin-top:0}.fnf-batch-title{align-items:flex-start;padding:0}.fnf-batch-title p{max-width:760px;margin:7px 0 0}.fnf-batch-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.018)}.fnf-batch-preview{display:grid;gap:10px;margin-top:12px;max-height:620px;overflow:auto}.fnf-batch-group{border:1px solid var(--line);border-radius:13px;overflow:hidden;background:rgba(255,255,255,.012)}.fnf-batch-group-head{display:flex;justify-content:space-between;gap:12px;padding:11px 12px;background:rgba(255,255,255,.025)}.fnf-batch-group-head>div:first-child{display:flex;flex-direction:column;gap:2px}.fnf-batch-group-head span,.fnf-batch-chart small{font-size:10px;color:var(--muted)}.fnf-batch-media{display:flex;flex-direction:column;text-align:right;max-width:55%}.fnf-batch-charts{display:grid}.fnf-batch-chart{display:grid;grid-template-columns:auto minmax(150px,.8fr) minmax(220px,1.2fr);align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--line)}.fnf-batch-chart>span{display:flex;flex-direction:column}.fnf-batch-name{width:100%}@media(max-width:760px){.fnf-batch-group-head,.fnf-batch-toolbar{align-items:flex-start;flex-direction:column}.fnf-batch-media{max-width:100%;text-align:left}.fnf-batch-chart{grid-template-columns:auto 1fr}.fnf-batch-name{grid-column:2}}`;
     document.head.appendChild(style);
     enhanceSingleFilePreview();
     return true;
