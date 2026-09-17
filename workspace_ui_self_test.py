@@ -25,6 +25,7 @@ def main() -> None:
     browser = read("song-picker.js")
     modal_owner = read("song-picker-modal.js")
     modal_styles = read("song-picker-modal.css")
+    visualizer_layout_fix = read("visualizer-layout-fix.css")
     song_tools = read("song-tools.js")
     import_center = read("import-center.js")
     fnf_batch = read("fnf-batch-import.js")
@@ -34,6 +35,7 @@ def main() -> None:
         app,
         "loadStyle('/workspace-ui.css')",
         "loadStyle('/song-picker-modal.css')",
+        "loadStyle('/visualizer-layout-fix.css')",
         "'/song-picker-modal.js'",
         "'/workspace-ui.js'",
         "'/fnf-batch-import.js'",
@@ -102,6 +104,25 @@ def main() -> None:
         "new MutationObserver(sync)",
         'modal.classList.contains("open")',
         'modal.classList.remove("open")',
+    )
+
+    # Visualizer disclosure adds a real panel child. Its grid must add a matching
+    # auto-sized row so status strips cannot inherit the playfield's 430px track.
+    assert_all(
+        workspace,
+        'details.id = "visualizerMoreControls"',
+        'details.className = "visualizer-more-controls card"',
+        'class="visualizer-more-body"',
+        'toolbar.after(details)',
+    )
+    assert_all(
+        visualizer_layout_fix,
+        "#view-visualizer .visualizer-panel:has(> #visualizerMoreControls)",
+        "grid-template-rows: auto auto auto auto minmax(430px, 1fr) auto;",
+        "#visualizerMoreControls:not([open]) > .visualizer-more-body",
+        "display: none !important;",
+        "#visualizerMoreControls[open] > .visualizer-more-body",
+        "display: flex !important;",
     )
 
     # Song Details launches workflows first and defers deeper information to tabs.
