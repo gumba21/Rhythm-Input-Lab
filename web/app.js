@@ -19,6 +19,7 @@
   };
 
   loadStyle('/workspace-ui.css');
+  loadStyle('/song-picker-modal.css');
 
   const loadVisualizer = () => loadScript('/visualizer.js', () => {
     loadScript('/global-bridge.js', () => {
@@ -43,16 +44,18 @@
                                           loadScript('/analysis-unified.js', () => {
                                             loadScript('/analysis-language-polish.js', () => {
                                               loadScript('/song-picker.js', () => {
-                                                loadScript('/ril-packages.js', () => {
-                                                  loadScript('/ril-export-polish.js', () => {
-                                                    loadScript('/ril-export-v2.js', () => {
-                                                      loadScript('/ril-export-reliability.js', () => {
-                                                        loadScript('/ril-export-jobs.js', () => {
-                                                          loadScript('/osu-import.js', () => {
-                                                            loadScript('/quaver-import.js', () => {
-                                                              loadScript('/quaver-multi-import.js', () => {
-                                                                loadScript('/import-center.js', () => {
-                                                                  loadScript('/fnf-batch-import.js', () => loadScript('/workspace-ui.js'));
+                                                loadScript('/song-picker-modal.js', () => {
+                                                  loadScript('/ril-packages.js', () => {
+                                                    loadScript('/ril-export-polish.js', () => {
+                                                      loadScript('/ril-export-v2.js', () => {
+                                                        loadScript('/ril-export-reliability.js', () => {
+                                                          loadScript('/ril-export-jobs.js', () => {
+                                                            loadScript('/osu-import.js', () => {
+                                                              loadScript('/quaver-import.js', () => {
+                                                                loadScript('/quaver-multi-import.js', () => {
+                                                                  loadScript('/import-center.js', () => {
+                                                                    loadScript('/fnf-batch-import.js', () => loadScript('/workspace-ui.js'));
+                                                                  });
                                                                 });
                                                               });
                                                             });
