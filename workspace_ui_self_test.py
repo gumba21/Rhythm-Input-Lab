@@ -37,7 +37,7 @@ def main() -> None:
     assert_all(
         browser,
         'window.rilSongBrowser =',
-        'class="library-shell"',
+        'shell.className = "library-shell"',
         '"favorites"',
         '"recent"',
         '"imported"',
