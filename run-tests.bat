@@ -29,6 +29,9 @@ if errorlevel 1 goto :failed
 py practice_engine_backpolish_self_test.py
 if errorlevel 1 goto :failed
 
+py workspace_ui_self_test.py
+if errorlevel 1 goto :failed
+
 echo.
 echo All Rhythm Input Lab tests passed.
 pause
