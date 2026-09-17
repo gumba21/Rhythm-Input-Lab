@@ -50,6 +50,7 @@ jobs:
           node --check web/analysis-unified.js
           node --check web/analysis-language-polish.js
           node --check web/song-picker.js
+          node --check web/song-picker-modal.js
           node --check web/ril-packages.js
           node --check web/ril-export-polish.js
           node --check web/ril-export-v2.js
