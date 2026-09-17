@@ -109,12 +109,25 @@ Completed in the current development branch:
 - active-actions-per-second import measurement without adopting Quaver's difficulty or scoring systems
 - chunked upload, map selection, duplicate handling, provenance, archive protections, and dedicated parser fixtures
 - immediate neutral RIL use in Practice, Visualizer, Analysis, attempts, and `.ril` sharing
+- Codename Engine FNF chart normalization alongside existing legacy/Psych FNF support
+- folder-first FNF batch discovery for both `songs/<song>/charts` + `songs/<song>/song` and `assets/data/<song>` + `assets/songs/<song>` layouts
+- automatic FNF instrumental and multi-vocal-stem discovery with shared media across imported difficulties
+- synchronized multi-vocal playback in Practice and Visualizer while retaining the existing primary vocals behavior
 - FNF-informed Practice conductor clock that extrapolates smoothly between audio samples
 - input-event timestamp reconciliation instead of relying only on the previous animation frame
 - time-derived note positions, bounded audio drift correction, seek re-anchoring, and lag-spike recovery
 - separate receptor press and confirmed-hit feedback
 - sustain clipping at the receptor, authored tail endpoints, precise release reconciliation, hold-complete cleanup, and visible early-release state
 - focus-loss pausing that closes presses and prevents stuck keys
+- scalable shared song library with compact/comfortable views, organizational scopes, source/media/key filters, favorites, collections, keyboard navigation, and a details inspector
+- shared song-browser foundation reused by Songs, Practice, Visualizer, and Analysis
+- Song Details reorganized around Practice, Visualizer, and Analysis actions with Overview, Attempts, Chart/mechanics, Media, Source/provenance, and Statistics tabs
+- Practice recomposed around the playfield with contextual range, mixer, settings, results, library, diagnostics, and shortcut surfaces while preserving the existing bound controls and engine behavior
+- full-width precision range editing retained inside the contextual range workspace
+- Import reorganized into isolated FNF, osu!mania, Quaver, and Portable RIL adapters, with FNF folder-first and single-JSON modes inside the FNF adapter
+- Dashboard reorganized around continue/recent/quick-action workflows with lifetime input statistics demoted
+- grouped Library, Play, Analyze, and System navigation prepared for future tools without adding placeholder pages
+- responsive workspace layout and dedicated UI integration smoke coverage
 - dedicated Practice-engine architecture notes, licensing notices, and smoke coverage
 
 Remaining 5.0 work:
