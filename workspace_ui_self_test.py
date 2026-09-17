@@ -23,15 +23,24 @@ def main() -> None:
     workspace = read("workspace-ui.js")
     styles = read("workspace-ui.css")
     browser = read("song-picker.js")
+    modal_owner = read("song-picker-modal.js")
+    modal_styles = read("song-picker-modal.css")
     song_tools = read("song-tools.js")
     import_center = read("import-center.js")
     fnf_batch = read("fnf-batch-import.js")
 
     # Final ownership/load order: legacy engines first, workspace composition last.
-    assert_all(app, "loadStyle('/workspace-ui.css')", "'/workspace-ui.js'", "'/fnf-batch-import.js'")
+    assert_all(
+        app,
+        "loadStyle('/workspace-ui.css')",
+        "loadStyle('/song-picker-modal.css')",
+        "'/song-picker-modal.js'",
+        "'/workspace-ui.js'",
+        "'/fnf-batch-import.js'",
+    )
     assert "/practice-library-menu.js" not in app, "Old Practice library wrapper should not remain in the load chain"
     assert app.index("/practice.js") < app.index("/practice-tools.js") < app.index("/practice-comfort.js") < app.index("/workspace-ui.js")
-    assert app.index("/song-picker.js") < app.index("/import-center.js") < app.index("/fnf-batch-import.js") < app.index("/workspace-ui.js")
+    assert app.index("/song-picker.js") < app.index("/song-picker-modal.js") < app.index("/import-center.js") < app.index("/fnf-batch-import.js") < app.index("/workspace-ui.js")
 
     # Shared library foundation and scalable organization.
     assert_all(
@@ -54,6 +63,46 @@ def main() -> None:
         'data-song-picker-target',
     )
     assert_all(styles, ".library-shell", ".library-rail", ".library-inspector", ".library-row", ".library-comfortable")
+
+    # Shared picker must be a body-owned viewport modal, never a normal-flow child of a page/view.
+    assert_all(
+        browser,
+        'modal.id = "songPickerModal"',
+        'modal.className = "song-picker-modal"',
+        'document.body.appendChild(modal)',
+        'window.rilSongPicker =',
+    )
+    assert_all(
+        modal_styles,
+        ".song-picker-modal {",
+        "position: fixed;",
+        "inset: 0;",
+        "z-index: 2000;",
+        "display: none;",
+        ".song-picker-modal.open {",
+        "display: grid;",
+        "pointer-events: auto;",
+        ".song-picker-dialog {",
+        "max-height: calc(100dvh - 36px);",
+        "overflow: hidden;",
+        ".song-picker-rows {",
+        "overflow: auto;",
+        "overscroll-behavior: contain;",
+    )
+    assert_all(
+        modal_owner,
+        'modal.setAttribute("role", "dialog")',
+        'modal.setAttribute("aria-modal", "true")',
+        'appShell.setAttribute("inert", "")',
+        'document.documentElement.style.overflow = "hidden"',
+        'document.body.style.overflow = "hidden"',
+        "runtime.mainScrollTop",
+        "runtime.previousFocus",
+        "preventScroll: true",
+        "new MutationObserver(sync)",
+        'modal.classList.contains("open")',
+        'modal.classList.remove("open")',
+    )
 
     # Song Details launches workflows first and defers deeper information to tabs.
     assert_all(
