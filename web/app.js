@@ -20,6 +20,7 @@
 
   loadStyle('/workspace-ui.css');
   loadStyle('/song-picker-modal.css');
+  loadStyle('/visualizer-layout-fix.css');
 
   const loadVisualizer = () => loadScript('/visualizer.js', () => {
     loadScript('/global-bridge.js', () => {
