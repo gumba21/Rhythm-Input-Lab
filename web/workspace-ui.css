@@ -78,7 +78,16 @@
 .dashboard-secondary-stats .metric { margin-top: 8px; box-shadow: none; }
 #recentSongs.dashboard-song-grid { grid-template-columns: repeat(auto-fill,minmax(210px,1fr)); }
 #recentSongs.dashboard-song-grid .song-card { min-height: 118px; padding: 13px; }
-#recentSongs.dashboard-song-grid .song-title { font-size: 15px; max-width: 100%; }
+#recentSongs.dashboard-song-grid .song-title {
+  max-width: 100%;
+  min-height: 38px;
+  font-size: 15px;
+  line-height: 1.27;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 #recentSongs.dashboard-song-grid .pill-row { margin-top: 10px; }
 .dashboard-attempt-title { font-weight: 800; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dashboard-attempt-meta { margin-top: 4px; display: flex; gap: 7px; flex-wrap: wrap; color: var(--muted); font-size: 10px; }
@@ -204,8 +213,8 @@
 .library-inspector-stat b { display: block; margin-top: 3px; font-size: 11px; }
 
 /* shared picker uses the same row language */
-.song-picker-dialog { width: min(1040px,96vw)!important; }
-.song-picker-controls { grid-template-columns: minmax(220px,1fr) 160px 110px auto!important; }
+.song-picker-dialog { width: min(1120px,97vw)!important; }
+.song-picker-controls { grid-template-columns: minmax(220px,1fr) 170px 150px 110px auto!important; }
 .song-picker-row { grid-template-columns: 28px minmax(180px,1fr) 86px 105px 100px!important; }
 
 /* song detail workspace */
@@ -334,6 +343,8 @@
   .library-row { grid-template-columns: 28px minmax(160px,1fr) 65px 80px auto; }
   .library-row .library-cell:nth-of-type(4) { display: none; }
   .practice-song-chip { max-width: 260px; }
+  .song-picker-controls { grid-template-columns: minmax(190px,1fr) 145px 140px 100px!important; }
+  #songPickerFavorites { grid-column: 4; }
 }
 @media(max-width:1030px) {
   .library-shell { grid-template-columns: 185px minmax(0,1fr); }
@@ -342,6 +353,8 @@
   .dashboard-quick-actions { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .practice-settings-grid,.practice-mixer-grid { grid-template-columns: 1fr; }
   .practice-settings-section + .practice-settings-section { padding-left: 0; padding-top: 12px; border-left: 0; border-top: 1px solid var(--line); }
+  .song-picker-controls { grid-template-columns: 1fr 1fr!important; }
+  .song-picker-controls input { grid-column: 1/-1; }
 }
 @media(max-width:760px) {
   .nav-group-label { display: none; }
