@@ -75,7 +75,7 @@ def main() -> None:
     # Practice keeps the existing bound controls but moves them into contextual surfaces.
     assert_all(
         workspace,
-        'id="practiceContextToolbar"',
+        'toolbar.id = "practiceContextToolbar"',
         'practiceRangePanel',
         'practiceMixerPanel',
         'practiceSettingsPanel',
