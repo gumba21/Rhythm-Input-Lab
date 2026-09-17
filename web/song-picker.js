@@ -191,7 +191,6 @@
   }
 
   function visibleRows(rows = allSongs()) { return sortRows(filterRows(rows)); }
-
   function scopeCount(scope) { return allSongs().filter(song => matchesScope(song, scope)).length; }
 
   function exceptionalPills(song) {
@@ -385,17 +384,40 @@
     }
   }
 
+  function pickerScopeOptions() {
+    const base = [
+      ["all", "All songs"], ["favorites", "Favorites"], ["recent", "Recently played"],
+      ["imported", "Recently imported"], ["attempts", "With attempts"], ["unplayed", "Unplayed"],
+      ["source:fnf", "Source · FNF"], ["source:osu", "Source · osu!mania"],
+      ["source:quaver", "Source · Quaver"], ["source:ril", "Source · Portable RIL"],
+      ["media:audio", "Media · Audio available"], ["media:missing", "Media · Missing audio"],
+    ];
+    const collections = collectionRows().map(row => [`collection:${row.id}`, `Collection · ${row.name}`]);
+    return [...base, ...collections];
+  }
+
+  function syncPickerScopeOptions() {
+    const select = q("#songPickerScope");
+    if (!select) return;
+    const rows = pickerScopeOptions();
+    select.innerHTML = rows.map(([value, label]) => `<option value="${esc(value)}">${esc(label)}</option>`).join("");
+    if (!rows.some(([value]) => value === runtime.scope)) runtime.scope = "all";
+    select.value = runtime.scope;
+  }
+
   /* Shared modal picker for Practice, Visualizer, and Analysis. */
   function installPicker() {
     if (q("#songPickerModal")) return;
     const modal = document.createElement("div");
     modal.id = "songPickerModal";
     modal.className = "song-picker-modal";
-    modal.innerHTML = `<div class="song-picker-dialog card"><div class="song-picker-head"><div><div class="eyebrow">Shared song library</div><h2>Choose a song</h2><p id="songPickerCaption">Use the same library filters everywhere.</p></div><button id="songPickerClose" class="icon-button" title="Close">×</button></div><div class="song-picker-controls"><input id="songPickerSearch" placeholder="Search titles, artists, mappers…" autocomplete="off"><select id="songPickerSort"><option value="az">Name A–Z</option><option value="za">Name Z–A</option><option value="recent">Recently played</option><option value="attempts">Most attempts</option><option value="mode">Key mode</option></select><select id="songPickerMode"><option value="all">All modes</option><option value="4">4K</option><option value="5">5K</option><option value="6">6K</option><option value="7">7K</option><option value="8">8K</option><option value="9">9K</option></select><button id="songPickerFavorites" class="button small">Favorites first</button></div><div class="song-picker-summary"><span id="songPickerCount">0 songs</span><span>↑ ↓ Enter</span></div><div id="songPickerRows" class="song-picker-rows" role="listbox" tabindex="0"></div></div>`;
+    modal.innerHTML = `<div class="song-picker-dialog card"><div class="song-picker-head"><div><div class="eyebrow">Shared song library</div><h2>Choose a song</h2><p id="songPickerCaption">Use the same library organization everywhere.</p></div><button id="songPickerClose" class="icon-button" title="Close">×</button></div><div class="song-picker-controls"><input id="songPickerSearch" placeholder="Search titles, artists, mappers…" autocomplete="off"><select id="songPickerScope" title="Library view"></select><select id="songPickerSort"><option value="az">Name A–Z</option><option value="za">Name Z–A</option><option value="recent">Recently played</option><option value="imported">Recently imported</option><option value="attempts">Most attempts</option><option value="mode">Key mode</option></select><select id="songPickerMode"><option value="all">All modes</option><option value="4">4K</option><option value="5">5K</option><option value="6">6K</option><option value="7">7K</option><option value="8">8K</option><option value="9">9K</option></select><button id="songPickerFavorites" class="button small">Favorites first</button></div><div class="song-picker-summary"><span id="songPickerCount">0 songs</span><span>↑ ↓ Enter</span></div><div id="songPickerRows" class="song-picker-rows" role="listbox" tabindex="0"></div></div>`;
     document.body.appendChild(modal);
+    syncPickerScopeOptions();
     q("#songPickerClose").addEventListener("click", closePicker);
     modal.addEventListener("pointerdown", event => { if (event.target === modal) closePicker(); });
     q("#songPickerSearch").addEventListener("input", event => { runtime.query = event.target.value; renderPicker(); });
+    q("#songPickerScope").addEventListener("change", event => { runtime.scope = event.target.value; savePreferences(); renderPicker(); });
     q("#songPickerSort").addEventListener("change", event => { runtime.sort = event.target.value; savePreferences(); renderPicker(); });
     q("#songPickerMode").addEventListener("change", event => { runtime.keyMode = event.target.value; savePreferences(); renderPicker(); });
     q("#songPickerFavorites").addEventListener("click", () => { runtime.favoritesFirst = !runtime.favoritesFirst; savePreferences(); renderPicker(); });
@@ -412,9 +434,9 @@
     installPicker();
     runtime.target = target;
     runtime.query = "";
-    runtime.scope = "all";
     q("#songPickerSearch").value = "";
-    q("#songPickerCaption").textContent = `Choose a chart for ${targetLabel()}. Sorting, favorites, and key filters match the main library.`;
+    syncPickerScopeOptions();
+    q("#songPickerCaption").textContent = `Choose a chart for ${targetLabel()}. Library views, sorting, favorites, and key filters match Songs.`;
     q("#songPickerModal").classList.add("open");
     renderPicker();
     requestAnimationFrame(() => q("#songPickerSearch")?.focus());
@@ -424,7 +446,9 @@
 
   function renderPicker() {
     installPicker();
-    const rows = sortRows(filterRows(pickerSongs(), { query: runtime.query, scope: "all", keyMode: runtime.keyMode }));
+    syncPickerScopeOptions();
+    const rows = sortRows(filterRows(pickerSongs(), { query: runtime.query, scope: runtime.scope, keyMode: runtime.keyMode }));
+    q("#songPickerScope").value = runtime.scope;
     q("#songPickerSort").value = runtime.sort;
     q("#songPickerMode").value = runtime.keyMode;
     q("#songPickerFavorites").classList.toggle("primary", runtime.favoritesFirst);
