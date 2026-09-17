@@ -48,8 +48,7 @@
     select.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
-  /* ---------- grouped application navigation ---------- */
-
+  /* grouped application navigation */
   function navGroup(label, views) {
     const nav = q(".nav");
     if (!nav) return null;
@@ -79,8 +78,7 @@
     return true;
   }
 
-  /* ---------- dashboard ---------- */
-
+  /* dashboard */
   function metricHtml(label, value, note = "") {
     return `<div class="card metric"><div class="metric-label">${esc(label)}</div><div class="metric-value">${esc(value)}</div>${note ? `<div class="metric-note">${esc(note)}</div>` : ""}</div>`;
   }
@@ -118,7 +116,6 @@
     const metrics = q("#dashboardMetrics");
     if (!data || !metrics) return;
     installDashboardActions();
-
     metrics.classList.add("ril-dashboard-metrics");
     metrics.innerHTML = [
       metricHtml("Songs", Number(data.songs || 0).toLocaleString(), "local library"),
@@ -176,8 +173,7 @@
     return true;
   }
 
-  /* ---------- Practice progressive disclosure ---------- */
-
+  /* Practice progressive disclosure */
   function panelMarkup(id, title) {
     return `<section id="${id}" class="practice-context-panel"><div class="practice-context-head"><h3>${esc(title)}</h3><button class="icon-button compact" data-practice-close title="Close">×</button></div><div class="practice-context-body"></div></section>`;
   }
@@ -221,9 +217,7 @@
       <button class="button small" data-practice-panel="results" id="practiceWorkspaceResults" disabled>Results</button>
       <button class="button small" id="practiceWorkspaceLibrary">Library</button>
       <button class="button small" data-practice-panel="diagnostics">Diagnostics</button>`;
-    const stageToolbar = q(".practice-stage-toolbar", stage);
-    stageToolbar?.after(toolbar);
-
+    q(".practice-stage-toolbar", stage)?.after(toolbar);
     q("#practiceWorkspaceSong")?.addEventListener("click", () => window.rilSongBrowser?.open?.("practice"));
     q("#practiceWorkspaceBrowse")?.addEventListener("click", () => window.rilSongBrowser?.open?.("practice"));
     q("#practiceWorkspaceSpeed")?.addEventListener("change", event => clickSpeed(event.target.value));
@@ -237,13 +231,18 @@
     const host = document.createElement("div");
     host.id = "practiceContextHost";
     host.className = "practice-context-host";
-    host.innerHTML = [panelMarkup("practiceRangePanel", "Range editor"), panelMarkup("practiceMixerPanel", "Audio mixer"), panelMarkup("practiceSettingsPanel", "Practice settings"), panelMarkup("practiceResultsPanel", "Results"), panelMarkup("practiceDiagnosticsPanel", "Diagnostics")].join("");
+    host.innerHTML = [
+      panelMarkup("practiceRangePanel", "Range editor"),
+      panelMarkup("practiceMixerPanel", "Audio mixer"),
+      panelMarkup("practiceSettingsPanel", "Practice settings"),
+      panelMarkup("practiceResultsPanel", "Results"),
+      panelMarkup("practiceDiagnosticsPanel", "Diagnostics & shortcuts"),
+    ].join("");
     q(".practice-transport", stage)?.after(host);
     qa("[data-practice-close]", host).forEach(button => button.addEventListener("click", () => setPracticePanel(null)));
-    return host;
   }
 
-  function movePracticeControls(host) {
+  function movePracticeControls() {
     const rangeBlock = q("#practiceRangeCaption")?.closest(".inspector-block");
     const playbackBlock = q("#practiceLeadIn")?.closest(".inspector-block");
     const lastAttemptBlock = q("#practiceJudgmentBreakdown")?.closest(".inspector-block");
@@ -279,11 +278,21 @@
 
     const resultsBody = q(".practice-context-body", practicePanel("results"));
     if (resultsBody) {
+      const headline = document.createElement("div");
+      headline.id = "practiceWorkspaceResultHeadline";
+      headline.className = "song-identity-grid";
+      resultsBody.appendChild(headline);
       const actions = document.createElement("div");
       actions.className = "practice-results-actions";
       actions.id = "practiceWorkspaceResultActions";
       const polishActions = q("#practicePolishResultActions");
-      if (polishActions) actions.appendChild(polishActions);
+      if (polishActions) {
+        polishActions.style.position = "static";
+        polishActions.style.transform = "none";
+        polishActions.style.opacity = "1";
+        polishActions.style.pointerEvents = "auto";
+        actions.appendChild(polishActions);
+      }
       const analysis = document.createElement("button");
       analysis.id = "practiceWorkspaceAnalyze";
       analysis.className = "button small";
@@ -303,6 +312,8 @@
     if (loop && loopMount) loopMount.appendChild(loop);
     const favorite = q("#practiceFavoriteButton");
     if (favorite) q("#practiceWorkspaceBrowse")?.after(favorite);
+    const oldBrowse = q('[data-song-picker-target="practice"]', q("#view-practice .practice-head-actions"));
+    if (oldBrowse) oldBrowse.style.display = "none";
     return true;
   }
 
@@ -324,6 +335,24 @@
     return true;
   }
 
+  function gradeFor(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return "—";
+    if (number >= 98) return "S";
+    if (number >= 93) return "A";
+    if (number >= 85) return "B";
+    if (number >= 75) return "C";
+    if (number >= 60) return "D";
+    return "F";
+  }
+
+  function attemptAccuracy(attempt) {
+    const stats = attempt?.stats || {};
+    const hits = Number(stats.hits || 0);
+    const misses = Number(stats.misses || 0);
+    return hits + misses ? Number(stats.weighted || 0) / (hits + misses) * 100 : null;
+  }
+
   function updatePracticeWorkspace() {
     const practice = window.rilPracticeEngine?.practice;
     if (!practice) return;
@@ -339,11 +368,21 @@
       runtime.lastPracticeAttempt = practice.lastAttempt;
       if (q("#view-practice")?.classList.contains("active")) setPracticePanel("results");
     }
-
     if (runtime.lastPracticeSong !== practice.songFolder) {
       runtime.lastPracticeSong = practice.songFolder;
       runtime.lastPracticeAttempt = practice.lastAttempt || null;
       if (runtime.activePracticePanel === "results" && !practice.lastAttempt) setPracticePanel(null);
+    }
+
+    const attempt = practice.lastAttempt;
+    const headline = q("#practiceWorkspaceResultHeadline");
+    if (headline) {
+      if (!attempt) headline.innerHTML = "";
+      else {
+        const value = attemptAccuracy(attempt);
+        const stats = attempt.stats || {};
+        headline.innerHTML = `<div class="song-identity-card"><span>Accuracy</span><b>${value === null ? "—" : `${value.toFixed(2)}%`}</b></div><div class="song-identity-card"><span>Grade</span><b>${gradeFor(value)}</b></div><div class="song-identity-card"><span>Best combo</span><b>${Number(stats.maxCombo || 0).toLocaleString()}</b></div><div class="song-identity-card"><span>Misses</span><b>${Number(stats.misses || 0).toLocaleString()}</b></div>`;
+      }
     }
 
     const stemsRoot = q("#practiceWorkspaceStemList");
@@ -365,7 +404,8 @@
       const timing = q("#practiceTimingStatus")?.textContent || "—";
       const audio = q("#practicePolishAudioStatus")?.textContent || q("#practiceAudioStatus")?.textContent || "—";
       const stateLabel = q("#practiceRunState")?.textContent || (practice.playing ? "Playing" : practice.bundle ? "Ready" : "No chart");
-      diagnostics.innerHTML = `<div class="practice-diagnostics"><div class="practice-diagnostic-box"><span>State</span><b>${esc(stateLabel)}</b></div><div class="practice-diagnostic-box"><span>Source</span><b>${esc(source)}</b></div><div class="practice-diagnostic-box"><span>Timing</span><b>${esc(timing)}</b></div><div class="practice-diagnostic-box"><span>Audio</span><b>${esc(audio)}</b></div><div class="practice-diagnostic-box"><span>Input clock</span><b>Conductor + event timestamps</b></div><div class="practice-diagnostic-box"><span>Clock sample</span><b>${Number(backpolish?.lastSongMs || practice.currentMs || 0).toFixed(2)} ms</b></div></div><div class="list-sub" style="margin-top:10px">Diagnostics are informational. Timing behavior is unchanged by this panel.</div>`;
+      const shortcuts = q("#practiceControlsHelp")?.textContent || "Enter starts; Escape/P pauses; R retries; L toggles loop.";
+      diagnostics.innerHTML = `<div class="practice-diagnostics"><div class="practice-diagnostic-box"><span>State</span><b>${esc(stateLabel)}</b></div><div class="practice-diagnostic-box"><span>Source</span><b>${esc(source)}</b></div><div class="practice-diagnostic-box"><span>Timing</span><b>${esc(timing)}</b></div><div class="practice-diagnostic-box"><span>Audio</span><b>${esc(audio)}</b></div><div class="practice-diagnostic-box"><span>Input clock</span><b>Conductor + event timestamps</b></div><div class="practice-diagnostic-box"><span>Clock sample</span><b>${Number(backpolish?.lastSongMs || practice.currentMs || 0).toFixed(2)} ms</b></div></div><div class="song-detail-section"><h3>Keyboard shortcuts</h3><div class="list-sub" style="margin-top:7px;line-height:1.6">${esc(shortcuts)}</div></div><div class="list-sub" style="margin-top:10px">Diagnostics are informational. Timing behavior is unchanged by this panel.</div>`;
     }
   }
 
@@ -373,34 +413,38 @@
     if (runtime.practiceInstalled) return true;
     const stage = q("#view-practice .practice-stage-card");
     const inspector = q("#view-practice .practice-inspector");
-    if (!stage || !inspector || !q("#practicePrecisionSelector") || !q("#practiceHotfixControls") || !q("#practiceComfort")) return false;
-    runtime.practiceInstalled = true;
+    if (!stage || !inspector || !q("#practicePrecisionSelector") || !q("#practiceHotfixControls") || !q("#practiceComfort") || !q(".practice-polish-data")) return false;
     buildPracticeToolbar(stage);
     buildPracticePanels(stage);
-    if (!movePracticeControls()) return false;
+    if (!movePracticeControls()) {
+      q("#practiceContextToolbar")?.remove();
+      q("#practiceContextHost")?.remove();
+      return false;
+    }
     installPracticeLibrary();
-    q("#practiceEngineBackpolishBadge")?.classList.add("workspace-hidden-diagnostic");
+    const badge = q("#practiceEngineBackpolishBadge");
+    if (badge) badge.style.display = "none";
+    runtime.practiceInstalled = true;
     updatePracticeWorkspace();
     return true;
   }
 
-  /* ---------- Visualizer: keep transport primary, disclose setup/media ---------- */
-
+  /* Visualizer keeps transport primary while setup/media are disclosed on demand. */
   function installVisualizerDisclosure() {
     if (runtime.visualizerInstalled) return true;
     const toolbar = q("#view-visualizer .visualizer-toolbar");
     if (!toolbar || !q("#laneLength")) return false;
-    runtime.visualizerInstalled = true;
     const groups = qa(":scope > .tool-group", toolbar);
-    if (groups.length <= 3) return true;
+    if (groups.length <= 3) { runtime.visualizerInstalled = true; return true; }
     const details = document.createElement("details");
     details.id = "visualizerMoreControls";
-    details.className = "visualizer-more-controls";
-    details.innerHTML = '<summary class="button small">View, replay & media</summary><div class="visualizer-more-body"></div>';
+    details.className = "visualizer-more-controls card";
+    details.style.marginBottom = "8px";
+    details.innerHTML = '<summary class="button small" style="margin:8px;display:inline-flex">View, replay & media</summary><div class="visualizer-more-body" style="display:flex;gap:8px;flex-wrap:wrap;padding:0 10px 10px"></div>';
     toolbar.after(details);
     const body = q(".visualizer-more-body", details);
-    /* Play/restart, view mode, and playback rate remain in the primary toolbar. */
     groups.slice(3).forEach(group => body.appendChild(group));
+    runtime.visualizerInstalled = true;
     return true;
   }
 
@@ -421,6 +465,5 @@
     setPracticePanel,
     diagnostics: runtime,
   };
-
   requestAnimationFrame(tick);
 })();
