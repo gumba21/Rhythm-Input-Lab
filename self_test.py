@@ -131,10 +131,10 @@ def main() -> None:
                 "app.js", "visualizer.js", "global-bridge.js", "shared-results.js",
                 "visualizer-preferences.js", "practice-polish.js", "practice.js",
                 "practice-hotfix.js", "practice-tools.js", "practice-comfort.js",
-                "practice-library-menu.js", "practice-save.js", "song-media.js",
-                "analysis.js", "analysis-structure-bridge.js", "analysis-unified.js",
-                "song-picker.js", "ril-packages.js", "ril-export-polish.js", "osu-import.js",
-                "quaver-import.js",
+                "practice-save.js", "song-media.js", "analysis.js",
+                "analysis-structure-bridge.js", "analysis-unified.js", "song-picker.js",
+                "ril-packages.js", "ril-export-polish.js", "osu-import.js", "quaver-import.js",
+                "workspace-ui.js",
             ]
         }
         minimums = {
@@ -142,11 +142,11 @@ def main() -> None:
             "visualizer-preferences.js": 5000, "practice-polish.js": 20000,
             "practice.js": 10000, "practice-hotfix.js": 10000,
             "practice-tools.js": 10000, "practice-comfort.js": 20000,
-            "practice-library-menu.js": 4000, "practice-save.js": 3000,
-            "song-media.js": 10000, "analysis.js": 30000,
+            "practice-save.js": 3000, "song-media.js": 10000, "analysis.js": 30000,
             "analysis-unified.js": 15000, "song-picker.js": 10000,
             "ril-packages.js": 20000, "ril-export-polish.js": 5000,
             "osu-import.js": 15000, "quaver-import.js": 15000,
+            "workspace-ui.js": 10000,
         }
         for name, minimum in minimums.items():
             assert len(scripts[name]) > minimum, name
@@ -183,14 +183,18 @@ def main() -> None:
         assert "Import osu!mania" in scripts["osu-import.js"]
         assert "/api/quaver/import/chunk" in scripts["quaver-import.js"]
         assert "Import Quaver" in scripts["quaver-import.js"]
+        assert "practiceContextToolbar" in scripts["workspace-ui.js"]
+        assert "navGroup(\"Library\"" in scripts["workspace-ui.js"]
         for script in [
             "/global-bridge.js", "/shared-results.js", "/visualizer-preferences.js",
-            "/practice-polish.js", "/practice-comfort.js", "/practice-library-menu.js",
-            "/practice-save.js", "/song-media.js", "/analysis.js",
-            "/analysis-structure-bridge.js", "/analysis-unified.js", "/song-picker.js",
-            "/ril-packages.js", "/ril-export-polish.js", "/osu-import.js", "/quaver-import.js",
+            "/practice-polish.js", "/practice-comfort.js", "/practice-save.js",
+            "/song-media.js", "/analysis.js", "/analysis-structure-bridge.js",
+            "/analysis-unified.js", "/song-picker.js", "/ril-packages.js",
+            "/ril-export-polish.js", "/osu-import.js", "/quaver-import.js", "/workspace-ui.js",
         ]:
             assert script in scripts["app.js"]
+        assert "/practice-library-menu.js" not in scripts["app.js"]
+        assert "loadStyle('/workspace-ui.css')" in scripts["app.js"]
 
         assert getattr(v4._backend.Handler, "_ril_note_atlas_endpoint_installed", False)
         assert getattr(v4._backend.Handler, "_ril_song_media_installed", False)
@@ -204,7 +208,7 @@ def main() -> None:
         assert APP_VERSION == "5.0.0-dev"
 
     print(f"Rhythm Input Lab {APP_VERSION} self-test passed.")
-    print("Practice polish, portable sharing, osu!mania importing, and Quaver importing are present.")
+    print("Practice polish, workspace UI, portable sharing, osu!mania importing, and Quaver importing are present.")
 
 
 if __name__ == "__main__":
