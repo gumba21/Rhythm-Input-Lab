@@ -1,4 +1,12 @@
 (() => {
+  const loadStyle = href => {
+    if ([...document.styleSheets].some(sheet => sheet.href?.endsWith(href))) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    document.head.appendChild(link);
+  };
+
   const loadScript = (src, onload) => {
     const script = document.createElement('script');
     script.src = src;
@@ -10,9 +18,75 @@
     document.body.appendChild(script);
   };
 
+  loadStyle('/workspace-ui.css');
+  loadStyle('/song-picker-modal.css');
+  loadStyle('/visualizer-layout-fix.css');
+
   const loadVisualizer = () => loadScript('/visualizer.js', () => {
-    loadScript('/song-tools.js', () => {
-      loadScript('/v45-polish.js', () => loadScript('/reports.js'));
+    loadScript('/global-bridge.js', () => {
+      loadScript('/shared-results.js', () => {
+        loadScript('/song-tools.js', () => {
+          loadScript('/v45-polish.js', () => {
+            loadScript('/visualizer-preferences.js', () => {
+              loadScript('/reports.js', () => {
+                loadScript('/practice-polish.js', () => {
+                  loadScript('/practice-state-hotfix.js', () => {
+                    loadScript('/practice.js', () => {
+                      loadScript('/practice-hotfix.js', () => {
+                        loadScript('/practice-tools.js', () => {
+                          loadScript('/practice-comfort.js', () => {
+                            loadScript('/practice-save.js', () => {
+                              loadScript('/practice-engine-backpolish.js', () => {
+                                loadScript('/practice-engine-release-reconcile.js', () => {
+                                  loadScript('/song-media.js', () => {
+                                    loadScript('/multi-vocals.js', () => {
+                                      loadScript('/analysis.js', () => {
+                                        loadScript('/analysis-structure-bridge.js', () => {
+                                          loadScript('/analysis-unified.js', () => {
+                                            loadScript('/analysis-language-polish.js', () => {
+                                              loadScript('/song-picker.js', () => {
+                                                loadScript('/song-picker-modal.js', () => {
+                                                  loadScript('/ril-packages.js', () => {
+                                                    loadScript('/ril-export-polish.js', () => {
+                                                      loadScript('/ril-export-v2.js', () => {
+                                                        loadScript('/ril-export-reliability.js', () => {
+                                                          loadScript('/ril-export-jobs.js', () => {
+                                                            loadScript('/osu-import.js', () => {
+                                                              loadScript('/quaver-import.js', () => {
+                                                                loadScript('/quaver-multi-import.js', () => {
+                                                                  loadScript('/import-center.js', () => {
+                                                                    loadScript('/fnf-batch-import.js', () => loadScript('/workspace-ui.js'));
+                                                                  });
+                                                                });
+                                                              });
+                                                            });
+                                                          });
+                                                        });
+                                                      });
+                                                    });
+                                                  });
+                                                });
+                                              });
+                                            });
+                                          });
+                                        });
+                                      });
+                                    });
+                                  });
+                                });
+                              });
+                            });
+                          });
+                        });
+                      });
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
     });
   });
 
