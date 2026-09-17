@@ -2,6 +2,29 @@
 
 ## 5.0.0-dev
 
+### Workspace UI redesign
+
+- replaces the flat text-heavy Songs grid with a scalable shared library foundation using compact and comfortable views, organizational scopes, source/media/key filters, favorites, collections, keyboard navigation, and a selected-song inspector
+- reuses the same song-browser foundation for Practice, Visualizer, and Analysis instead of maintaining separate independent pickers
+- redesigns Song Details around primary Practice, Visualizer, and Analysis actions, with deeper chart, media, source/provenance, attempt, and statistics information behind tabs
+- reorganizes Practice around the playfield and existing transport, moving the already-bound precision range editor, mixer, persistent settings, results, Practice library, shortcuts, and diagnostics into contextual panels instead of duplicating their behavior
+- keeps multi-vocal Practice playback compatible by exposing discovered stems while retaining the shared vocals level and existing synchronized playback layer
+- moves Practice result metrics and the accuracy graph out of permanent empty screen space and opens the results surface after a completed run
+- hides routine timing/conductor diagnostics from the playfield while retaining them in an optional diagnostics panel
+- groups navigation into Library, Play, Analyze, and System sections without adding placeholder future pages
+- simplifies the Dashboard around continue/recent/quick-action workflows and demotes lifetime physical-input totals
+- collapses secondary Visualizer replay/media/view controls behind progressive disclosure while preserving transport access
+- adds responsive workspace styling for common desktop/laptop widths
+
+### Unified import workspace and FNF compatibility
+
+- isolates FNF, osu!mania, Quaver, and Portable RIL import workflows so only the selected adapter remains visible
+- integrates FNF folder-first importing inside the FNF adapter with separate Folder and Single JSON modes
+- adds Codename Engine chart support alongside legacy/Psych FNF normalization
+- discovers both `songs/<song>/charts` + `songs/<song>/song` and `assets/data/<song>` + `assets/songs/<song>` layouts for batch imports
+- automatically discovers instrumental audio and multiple vocal stems, shares media across imported difficulties, and preserves synchronized multi-vocal playback
+- adds dedicated workspace UI smoke coverage while keeping the Practice timing engine, adapter parsers, neutral model, and backend behavior unchanged
+
 ### Quaver neutral adapter
 
 - imports standalone `.qua` charts and multi-difficulty `.qp` mapsets through a dedicated local preview
