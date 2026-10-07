@@ -38,7 +38,7 @@ Light is deliberately conservative.
 
 - inserts opponent notes during clear player silence
 - does not add sparse accents
-- does not normally add handoff overlap
+- permits only very narrow, density-safe handoff overlap
 - keeps the strictest jack and density limits
 
 ### Balanced
