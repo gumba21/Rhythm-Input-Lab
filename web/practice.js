@@ -1091,7 +1091,7 @@
       updatePracticeHud();
       updatePracticeTransport();
     }
-    if (isPracticeVisible()) drawPractice(now);
+    if (isPracticeVisible() && !window.rilPracticeEngine?.backpolish) drawPractice(now);
     requestAnimationFrame(practiceAnimationLoop);
   }
 
