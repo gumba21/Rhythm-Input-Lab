@@ -859,7 +859,10 @@ function updateReplayStatus() {
 }
 
 function clearCurrentReplay() {
+  if (state.viz.playing) state.viz.currentMs = songTransport()?.currentTimeMs?.() ?? state.viz.currentMs;
   state.viz.playing = false;
+  state.viz.lifecycle = state.viz.bundle ? "paused" : "unloaded";
+  songTransport()?.pause?.(state.viz.bundle ? "paused" : "unloaded", { sessionId: state.viz.sessionId });
   updatePlayButton();
   state.viz.attempt = null;
   state.viz.attemptFolder = null;
@@ -967,7 +970,10 @@ async function loadVisualizer(songFolder, attemptFolder = null) {
 }
 
 async function loadAttemptForCurrent(attemptFolder) {
+  if (state.viz.playing) state.viz.currentMs = songTransport()?.currentTimeMs?.() ?? state.viz.currentMs;
   state.viz.playing = false;
+  state.viz.lifecycle = state.viz.bundle ? "paused" : "unloaded";
+  songTransport()?.pause?.(state.viz.bundle ? "paused" : "unloaded", { sessionId: state.viz.sessionId });
   updatePlayButton();
   if (!attemptFolder) {
     state.viz.attempt = null;
