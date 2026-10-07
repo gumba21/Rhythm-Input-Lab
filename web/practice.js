@@ -501,6 +501,7 @@
       practice.stats = newStats();
       practice.lifecycle = "ready";
       transport?.transition?.("ready", practice.sessionId);
+      transport?.setDuration?.(practice.durationMs, { sessionId: practice.sessionId });
       transport?.setRate?.(practice.speed, { sessionId: practice.sessionId });
       transport?.prepare?.(practice.currentMs, "ready", { sessionId: practice.sessionId });
 
