@@ -32,6 +32,22 @@
     return raw ? raw.replaceAll("_", " ") : "Unknown source";
   }
 
+  function combinedChartSection(data) {
+    const summary = data.bundle?.summary || {};
+    const raw = String(summary.source_format || summary.format || "").toLowerCase();
+    if (!(raw.includes("fnf") || raw.includes("psych") || raw.includes("codename"))) return "";
+    const player = Number(summary.player_notes || 0);
+    const opponent = Number(summary.opponent_notes || 0);
+    const compatible = player > 0 && opponent > 0;
+    return `<section class="song-detail-section combined-chart-entry">
+      <div class="section-title" style="padding:0">
+        <div><h3>Combined Chart</h3><div class="list-sub" style="margin-top:5px">Build one harder playable chart from authored player + opponent notes. Player/right-side rhythm stays authoritative; opponent material fills silence and safe handoffs.</div></div>
+        <button class="button small primary" id="generateCombinedChart" ${compatible ? "" : "disabled"}>Generate Combined Chart</button>
+      </div>
+      <div class="list-sub" style="margin-top:9px">${compatible ? `${player.toLocaleString()} player notes · ${opponent.toLocaleString()} opponent notes available` : "This FNF chart needs both preserved player and opponent note streams."}</div>
+    </section>`;
+  }
+
   function creatorLabel(summary = {}) {
     return summary.mapper || summary.charter || summary.creator || summary.artist || summary.original_charter || "Unknown creator";
   }
@@ -184,7 +200,7 @@
       body.style.marginTop = "0";
       body.innerHTML = `<div class="song-detail-primary"><button class="button primary" id="songDetailPractice" ${data.bundle ? "" : "disabled"}>Practice</button><button class="button primary" id="songDetailVisualizer" ${data.bundle ? "" : "disabled"}>Visualizer</button><button class="button primary" id="songDetailAnalysis" ${data.bundle ? "" : "disabled"}>Analysis</button><span style="flex:1"></span><button class="button" id="songDetailExport" ${data.bundle ? "" : "disabled"}>Export .ril</button><button class="button" id="songDetailManage">Manage</button></div>
         <div class="song-detail-tabs" role="tablist"><button class="song-detail-tab active" data-song-detail-tab="overview">Overview</button><button class="song-detail-tab" data-song-detail-tab="attempts">Attempts</button><button class="song-detail-tab" data-song-detail-tab="chart">Chart / mechanics</button><button class="song-detail-tab" data-song-detail-tab="media">Media</button><button class="song-detail-tab" data-song-detail-tab="source">Source</button><button class="song-detail-tab" data-song-detail-tab="statistics">Statistics</button></div>
-        <div class="song-detail-body"><div class="song-detail-panel" data-song-detail-panel="overview">${data.bundle ? overviewHtml(folder, data) : '<div class="empty">This song has recorded inputs but no imported chart.</div>'}</div><div class="song-detail-panel" data-song-detail-panel="attempts" hidden><div class="list">${attemptRows(folder, data.attempts)}</div></div><div class="song-detail-panel" data-song-detail-panel="chart" hidden>${data.bundle ? `<div class="song-detail-section"><div class="section-title" style="padding:0"><div><h3>Mechanic categories</h3><div class="list-sub">Tell RIL how custom notes and events should be interpreted. This changes local mappings, not the source chart.</div></div><button class="button small primary" id="saveMechanicMappings">Save categories</button></div><h3 style="margin-top:14px">Note types</h3><div class="mechanic-grid">${noteRows || '<div class="empty">No custom note labels.</div>'}</div><h3 style="margin-top:16px">Event types</h3><div class="mechanic-grid">${eventRows || '<div class="empty">No events.</div>'}</div></div>` : '<div class="empty">No chart is available.</div>'}</div><div class="song-detail-panel" data-song-detail-panel="media" hidden>${mediaHtml(folder, data)}</div><div class="song-detail-panel" data-song-detail-panel="source" hidden>${sourceHtml(data)}</div><div class="song-detail-panel" data-song-detail-panel="statistics" hidden><div id="songAnalyzerBody" class="empty">Reading attempt statistics…</div></div></div>`;
+        <div class="song-detail-body"><div class="song-detail-panel" data-song-detail-panel="overview">${data.bundle ? overviewHtml(folder, data) : '<div class="empty">This song has recorded inputs but no imported chart.</div>'}</div><div class="song-detail-panel" data-song-detail-panel="attempts" hidden><div class="list">${attemptRows(folder, data.attempts)}</div></div><div class="song-detail-panel" data-song-detail-panel="chart" hidden>${data.bundle ? `${combinedChartSection(data)}<div class="song-detail-section"><div class="section-title" style="padding:0"><div><h3>Mechanic categories</h3><div class="list-sub">Tell RIL how custom notes and events should be interpreted. This changes local mappings, not the source chart.</div></div><button class="button small primary" id="saveMechanicMappings">Save categories</button></div><h3 style="margin-top:14px">Note types</h3><div class="mechanic-grid">${noteRows || '<div class="empty">No custom note labels.</div>'}</div><h3 style="margin-top:16px">Event types</h3><div class="mechanic-grid">${eventRows || '<div class="empty">No events.</div>'}</div></div>` : '<div class="empty">No chart is available.</div>'}</div><div class="song-detail-panel" data-song-detail-panel="media" hidden>${mediaHtml(folder, data)}</div><div class="song-detail-panel" data-song-detail-panel="source" hidden>${sourceHtml(data)}</div><div class="song-detail-panel" data-song-detail-panel="statistics" hidden><div id="songAnalyzerBody" class="empty">Reading attempt statistics…</div></div></div>`;
 
       bindTabs(body);
       q("#songDetailPractice", body)?.addEventListener("click", () => goToSong(folder, "practice"));
@@ -196,6 +212,7 @@
         const field = q("#importSongName"); if (field) field.value = data.song.song_name;
       });
       q("#saveMechanicMappings", body)?.addEventListener("click", () => saveMechanicMappings(folder, data));
+      q("#generateCombinedChart", body)?.addEventListener("click", () => window.rilCombinedChart?.open?.(folder, data));
       qa(".modal-replay", body).forEach(button => button.addEventListener("click", () => loadVisualizer(folder, button.dataset.attempt)));
       qa(".modal-analysis-attempt", body).forEach(button => button.addEventListener("click", () => {
         goToSong(folder, "analysis");
