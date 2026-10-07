@@ -2,6 +2,17 @@
 
 ## 5.0.0-dev
 
+### Transport and session stabilization
+
+- adds one shared Practice/Visualizer song transport with explicit unloaded/loading/ready/counting-in/playing/paused/seeking/finished lifecycle ownership
+- treats instrumental, primary vocals, and extra vocal stems as one logical transport with a single master timeline for play, pause, seek, restart, rate changes, and late-loaded stem joining
+- uses per-song session generations and per-operation generations so stale async media loads or play completions cannot mutate or restart a replacement song
+- makes Practice count-in hand directly to the engine/transport instead of synthesizing another Start-button click and temporary lead-in rewrite
+- resets live Practice results and Visualizer replay state at the start of a replacement song session rather than waiting for the new chart load to finish
+- removes duplicate Practice canvas painting and non-render RAF polling, adds time-window note culling, and throttles heavy Visualizer timeline/event/diagnostic updates without tying timing accuracy to FPS
+- exposes transport/render counters under Practice Diagnostics and documents browser-only verification in `TRANSPORT_RUNTIME_TESTING.md`
+- adds deterministic transport state tests plus static ownership/session regression coverage; perceptual browser audio synchronization remains a hands-on validation item
+
 ### Workspace UI redesign
 
 - replaces the flat text-heavy Songs grid with a scalable shared library foundation using compact and comfortable views, organizational scopes, source/media/key filters, favorites, collections, keyboard navigation, and a selected-song inspector
