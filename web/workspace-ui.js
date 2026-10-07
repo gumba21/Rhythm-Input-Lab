@@ -15,6 +15,9 @@
     lastPracticeSong: null,
     lastPracticeAttempt: null,
     activePracticePanel: null,
+    practiceUiSignature: "",
+    practiceStemSignature: "",
+    diagnosticsAt: 0,
   };
 
   function formatDuration(ms) {
@@ -392,20 +395,29 @@
       const rows = [];
       if (primaryName) rows.push(`Primary vocals · ${primaryName}`);
       for (const stem of extra) rows.push(stem.filename || stem.label || stem.stem_id || "Vocal stem");
-      stemsRoot.innerHTML = rows.length
-        ? `<b>${rows.length} vocal track${rows.length === 1 ? "" : "s"}</b><div>${rows.map(row => esc(row)).join("<br>")}</div><div style="margin-top:5px">The Vocals control is the shared level for every detected vocal stem.</div>`
-        : "No saved vocal stems are loaded. Instrumental-only and silent Practice remain supported.";
+      const signature = rows.join("|");
+      if (signature !== runtime.practiceStemSignature) {
+        runtime.practiceStemSignature = signature;
+        stemsRoot.innerHTML = rows.length
+          ? `<b>${rows.length} vocal track${rows.length === 1 ? "" : "s"}</b><div>${rows.map(row => esc(row)).join("<br>")}</div><div style="margin-top:5px">The Vocals control is the shared level for every detected vocal stem.</div>`
+          : "No saved vocal stems are loaded. Instrumental-only and silent Practice remain supported.";
+      }
     }
 
-    const diagnostics = q(".practice-context-body", practicePanel("diagnostics"));
-    if (diagnostics) {
+    const diagnosticsPanel = practicePanel("diagnostics");
+    const diagnostics = q(".practice-context-body", diagnosticsPanel);
+    const now = performance.now();
+    if (diagnostics && diagnosticsPanel?.classList.contains("open") && now - runtime.diagnosticsAt >= 250) {
+      runtime.diagnosticsAt = now;
       const backpolish = window.rilPracticeEngine?.backpolish?.diagnostics;
+      const transport = window.rilSongTransport?.diagnostics?.() || {};
+      const render = practice.renderMetrics || {};
       const source = q("#practiceSourceStatus")?.textContent || "—";
       const timing = q("#practiceTimingStatus")?.textContent || "—";
       const audio = q("#practicePolishAudioStatus")?.textContent || q("#practiceAudioStatus")?.textContent || "—";
-      const stateLabel = q("#practiceRunState")?.textContent || (practice.playing ? "Playing" : practice.bundle ? "Ready" : "No chart");
+      const stateLabel = q("#practiceRunState")?.textContent || practice.lifecycle || (practice.playing ? "Playing" : practice.bundle ? "Ready" : "No chart");
       const shortcuts = q("#practiceControlsHelp")?.textContent || "Enter starts; Escape/P pauses; R retries; L toggles loop.";
-      diagnostics.innerHTML = `<div class="practice-diagnostics"><div class="practice-diagnostic-box"><span>State</span><b>${esc(stateLabel)}</b></div><div class="practice-diagnostic-box"><span>Source</span><b>${esc(source)}</b></div><div class="practice-diagnostic-box"><span>Timing</span><b>${esc(timing)}</b></div><div class="practice-diagnostic-box"><span>Audio</span><b>${esc(audio)}</b></div><div class="practice-diagnostic-box"><span>Input clock</span><b>Conductor + event timestamps</b></div><div class="practice-diagnostic-box"><span>Clock sample</span><b>${Number(backpolish?.lastSongMs || practice.currentMs || 0).toFixed(2)} ms</b></div></div><div class="song-detail-section"><h3>Keyboard shortcuts</h3><div class="list-sub" style="margin-top:7px;line-height:1.6">${esc(shortcuts)}</div></div><div class="list-sub" style="margin-top:10px">Diagnostics are informational. Timing behavior is unchanged by this panel.</div>`;
+      diagnostics.innerHTML = `<div class="practice-diagnostics"><div class="practice-diagnostic-box"><span>State</span><b>${esc(stateLabel)}</b></div><div class="practice-diagnostic-box"><span>Session</span><b>#${Number(transport.sessionId || practice.sessionId || 0)} · op #${Number(transport.operationId || 0)}</b></div><div class="practice-diagnostic-box"><span>Source</span><b>${esc(source)}</b></div><div class="practice-diagnostic-box"><span>Timing</span><b>${esc(timing)}</b></div><div class="practice-diagnostic-box"><span>Audio</span><b>${esc(audio)}</b></div><div class="practice-diagnostic-box"><span>Transport stems</span><b>${Number(transport.stems?.length || 0)} · drift ${Number(transport.lastDriftMs || 0).toFixed(1)} ms</b></div><div class="practice-diagnostic-box"><span>Transport safety</span><b>${Number(transport.driftCorrections || 0)} corrections · ${Number(transport.staleAsyncDrops || 0)} stale drops</b></div><div class="practice-diagnostic-box"><span>Render</span><b>${Number(render.fps || 0).toFixed(1)} FPS · ${Number(render.activeNotes || 0)} active notes</b></div><div class="practice-diagnostic-box"><span>Input clock</span><b>Conductor + event timestamps</b></div><div class="practice-diagnostic-box"><span>Clock sample</span><b>${Number(backpolish?.lastSongMs || practice.currentMs || 0).toFixed(2)} ms</b></div></div><div class="song-detail-section"><h3>Keyboard shortcuts</h3><div class="list-sub" style="margin-top:7px;line-height:1.6">${esc(shortcuts)}</div></div><div class="list-sub" style="margin-top:10px">Diagnostics are informational. Gameplay timing remains transport/conductor based, never frame based.</div>`;
     }
   }
 
@@ -464,8 +476,13 @@
     installPracticeLibrary();
     installVisualizerDisclosure();
     updatePracticeWorkspace();
-    requestAnimationFrame(tick);
   }
+
+  window.rilRenderDiagnostics = {
+    practice: () => ({ ...(window.rilPracticeEngine?.practice?.renderMetrics || {}) }),
+    visualizer: () => ({ ...(window.state?.viz?.renderMetrics || {}) }),
+    transport: () => window.rilSongTransport?.diagnostics?.() || {},
+  };
 
   window.rilWorkspaceUi = {
     installNavigation,
@@ -474,5 +491,6 @@
     setPracticePanel,
     diagnostics: runtime,
   };
-  requestAnimationFrame(tick);
+  tick();
+  setInterval(tick, 100);
 })();
