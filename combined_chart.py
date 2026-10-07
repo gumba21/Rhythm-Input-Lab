@@ -393,9 +393,7 @@ def _classify_candidate(
             nearby_handoff.time_ms + half,
         )
         if boundary_density <= MAX_HANDOFF_PLAYER_NOTES_PER_BEAT:
-            if preset.rank >= 2:
-                return "handoff", "handoff"
-            return None, "strength-handoff"
+            return "handoff", "handoff"
 
     if preset.rank >= 2 and preset.sparse_player_notes_per_beat > 0:
         beat_ms = tempo.beat_ms_at(time_ms)
