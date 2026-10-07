@@ -40,6 +40,8 @@ PRESETS: dict[str, MergePreset] = {
 }
 
 CATEGORY_PRIORITY = {"player-gap": 0, "handoff": 1, "sparse-accent": 2}
+HANDOFF_DETECTION_MAX_BEATS = 1.5
+MAX_HANDOFF_PLAYER_NOTES_PER_BEAT = 3.0
 
 
 @dataclass(frozen=True)
@@ -103,6 +105,40 @@ def _peak_nps(notes: Sequence[dict[str, Any]], window_ms: float = 1000.0) -> flo
             left += 1
         best = max(best, right - left + 1)
     return best / (window_ms / 1000.0)
+
+
+def _chart_patterns(notes: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    lane_counts = Counter(
+        _note_lane(note) for note in notes if note.get("lane") is not None
+    )
+    groups: dict[int, list[dict[str, Any]]] = {}
+    for note in notes:
+        if note.get("lane") is None:
+            continue
+        groups.setdefault(int(round(_note_start(note))), []).append(note)
+    chord_sizes = [
+        len(group)
+        for group in groups.values()
+        if len({note.get("lane") for note in group}) >= 2
+    ]
+    by_lane: dict[int, list[float]] = {}
+    for note in notes:
+        if note.get("lane") is None:
+            continue
+        by_lane.setdefault(_note_lane(note), []).append(_note_start(note))
+    jack_pairs = 0
+    for times in by_lane.values():
+        times.sort()
+        jack_pairs += sum(
+            1 for index in range(1, len(times))
+            if times[index] - times[index - 1] <= 250.0
+        )
+    return {
+        "lane_counts": {str(key): value for key, value in sorted(lane_counts.items())},
+        "chord_groups": len(chord_sizes),
+        "largest_chord": max(chord_sizes, default=1),
+        "jack_pairs_250ms": jack_pairs,
+    }
 
 
 class TempoMap:
@@ -279,7 +315,7 @@ def _handoffs(
     tempo: TempoMap,
 ) -> list[Handoff]:
     rows: list[Handoff] = []
-    max_beats = max(preset.handoff_window_beats for preset in PRESETS.values())
+    max_beats = HANDOFF_DETECTION_MAX_BEATS
     for player in player_phrases:
         for opponent in opponent_phrases:
             middle = (opponent.start_ms + player.end_ms) / 2.0
@@ -345,10 +381,21 @@ def _classify_candidate(
     if player_phrase is None:
         return "player-gap", "player-gap"
 
-    if _nearest_handoff(time_ms, handoffs, tempo, preset.handoff_window_beats) is not None:
-        if preset.rank >= 2:
-            return "handoff", "handoff"
-        return None, "strength-handoff"
+    nearby_handoff = _nearest_handoff(
+        time_ms, handoffs, tempo, preset.handoff_window_beats
+    )
+    if nearby_handoff is not None:
+        beat_ms = tempo.beat_ms_at(nearby_handoff.time_ms)
+        half = beat_ms / 2.0
+        boundary_density = _count_in_window(
+            player_notes,
+            nearby_handoff.time_ms - half,
+            nearby_handoff.time_ms + half,
+        )
+        if boundary_density <= MAX_HANDOFF_PLAYER_NOTES_PER_BEAT:
+            if preset.rank >= 2:
+                return "handoff", "handoff"
+            return None, "strength-handoff"
 
     if preset.rank >= 2 and preset.sparse_player_notes_per_beat > 0:
         beat_ms = tempo.beat_ms_at(time_ms)
@@ -466,7 +513,6 @@ def _with_provenance(
     copied["extra_data"] = extras
     if playable_owner is not None:
         copied["owner"] = playable_owner
-        copied["must_hit_section"] = True
     copied["end_ms"] = _note_end(copied)
     copied["sustain_ms"] = max(0.0, _note_end(copied) - _note_start(copied))
     return copied
@@ -628,6 +674,15 @@ def generate_combined_chart(
     )
 
     combined_player = [note for note in output_notes if note.get("owner") == "player"]
+    patterns = _chart_patterns(combined_player)
+    note_type_counts = Counter(
+        str(note.get("note_type") or "(normal)") for note in output_notes
+    )
+    raw_lane_counts = Counter(
+        int(note.get("raw_lane"))
+        for note in output_notes
+        if note.get("raw_lane") is not None
+    )
     output_summary = copy.deepcopy(summary)
     output_summary.update(
         {
@@ -663,6 +718,15 @@ def generate_combined_chart(
             "player_peak_1s_nps": _peak_nps(combined_player, 1000.0),
             "player_peak_2s_nps": _peak_nps(combined_player, 2000.0),
             "player_peak_5s_nps": _peak_nps(combined_player, 5000.0),
+            "player_lane_counts": patterns["lane_counts"],
+            "player_chord_groups": patterns["chord_groups"],
+            "largest_player_chord": patterns["largest_chord"],
+            "player_jack_pairs_250ms": patterns["jack_pairs_250ms"],
+            "raw_lane_counts": {
+                str(key): value for key, value in sorted(raw_lane_counts.items())
+            },
+            "note_type_counts": dict(note_type_counts),
+            "unique_note_types": len(note_type_counts),
         }
     )
 
