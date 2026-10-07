@@ -3,11 +3,20 @@
 (() => {
   const qs = selector => document.querySelector(selector);
   const qsa = selector => [...document.querySelectorAll(selector)];
+  const uiThrottle = { diagnosticsAt: 0, comboAt: 0 };
+
+  function transport() { return window.rilSongTransport || null; }
 
   function stopVisualizerPlayback() {
+    if (state.viz.playing) state.viz.currentMs = transport()?.currentTimeMs?.() ?? state.viz.currentMs;
     state.viz.playing = false;
     state.viz.lastFrame = 0;
-    for (const audio of audioElements()) audio.pause();
+    if (state.viz.bundle) {
+      state.viz.lifecycle = "paused";
+      transport()?.pause?.("paused", { sessionId: state.viz.sessionId });
+    } else {
+      transport()?.stop?.({ state: "unloaded", sessionId: state.viz.sessionId });
+    }
     updatePlayButton();
   }
 
@@ -230,40 +239,12 @@
 
   function installAudioSync() {
     updateAudioStatus = updateAudioDiagnostics;
-    syncAudioTracks = force => {
-      const tracks = readyAudio();
-      if (!tracks.length) return;
-      const primary = primaryAudio() || tracks[0];
-      const target = force ? state.viz.currentMs / 1000 : primary.currentTime;
-
-      for (const audio of tracks) {
-        audio.playbackRate = state.viz.playbackRate;
-        const threshold = force ? 0.001 : 0.012;
-        if (force || Math.abs(audio.currentTime - target) > threshold) setAudioTime(audio, target);
-      }
-    };
-
-    const originalTogglePlayback = togglePlayback;
-    togglePlayback = () => {
-      const willPlay = !state.viz.playing;
-      if (willPlay) syncAudioTracks(true);
-      originalTogglePlayback();
-      if (willPlay) {
-        for (const audio of readyAudio()) {
-          if (audio.paused) audio.play().catch(() => {});
-        }
-      }
-    };
+    syncAudioTracks = force => transport()?.correctDrift?.(Boolean(force)) || 0;
 
     for (const audio of audioElements()) {
-      audio.addEventListener("seeking", () => {
-        if (!state.viz.playing) return;
-        const primary = primaryAudio();
-        if (audio === primary) syncAudioTracks(false);
-      });
-      audio.addEventListener("loadedmetadata", updateAudioDiagnostics);
-      audio.addEventListener("durationchange", updateAudioDiagnostics);
-      audio.addEventListener("seeked", updateAudioDiagnostics);
+      audio.addEventListener("loadedmetadata", () => updateAudioDiagnostics());
+      audio.addEventListener("durationchange", () => updateAudioDiagnostics());
+      audio.addEventListener("seeked", () => updateAudioDiagnostics());
     }
   }
 
@@ -283,7 +264,10 @@
       `Vocals: ${state.viz.audioNames.vocals || "none"}${vocalsReady ? ` (${audioDurationText(vocals)})` : ""}`,
     ];
     if (instReady && vocalsReady) {
-      const drift = Math.round(Math.abs(inst.currentTime - vocals.currentTime) * 1000);
+      const transportInfo = transport()?.diagnostics?.();
+      const drift = Number.isFinite(Number(transportInfo?.lastDriftMs))
+        ? Math.round(Math.abs(Number(transportInfo.lastDriftMs)))
+        : Math.round(Math.abs(inst.currentTime - vocals.currentTime) * 1000);
       const lengthDifference = Number.isFinite(inst.duration) && Number.isFinite(vocals.duration)
         ? Math.round(Math.abs(inst.duration - vocals.duration) * 1000)
         : null;
@@ -321,10 +305,17 @@
     const originalUpdateTimeUI = updateTimeUI;
     updateTimeUI = () => {
       originalUpdateTimeUI();
+      const now = performance.now();
       const input = qs("#preciseSeekInput");
       if (input && document.activeElement !== input) input.value = preciseTime(state.viz.currentMs);
-      updateComboHud();
-      updateAudioDiagnostics();
+      if (now - uiThrottle.comboAt >= 50) {
+        uiThrottle.comboAt = now;
+        updateComboHud();
+      }
+      if (now - uiThrottle.diagnosticsAt >= 250) {
+        uiThrottle.diagnosticsAt = now;
+        updateAudioDiagnostics();
+      }
     };
 
     const originalRecomputeComparison = recomputeComparison;
