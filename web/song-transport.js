@@ -3,6 +3,16 @@
 (() => {
   const q = selector => document.querySelector(selector);
   const STATES = new Set(["unloaded", "loading", "ready", "counting-in", "playing", "paused", "seeking", "finished"]);
+  const ALLOWED = {
+    unloaded: new Set(["loading"]),
+    loading: new Set(["ready", "unloaded"]),
+    ready: new Set(["counting-in", "playing", "paused", "seeking", "loading", "unloaded"]),
+    "counting-in": new Set(["ready", "playing", "loading", "unloaded"]),
+    playing: new Set(["paused", "seeking", "finished", "ready", "loading", "unloaded"]),
+    paused: new Set(["playing", "seeking", "ready", "finished", "loading", "unloaded"]),
+    seeking: new Set(["playing", "paused", "ready", "finished", "loading", "unloaded"]),
+    finished: new Set(["ready", "counting-in", "playing", "paused", "seeking", "loading", "unloaded"]),
+  };
   const runtime = {
     sessionId: 0,
     operationId: 0,
@@ -83,10 +93,17 @@
       && (!folder || folder === runtime.folder);
   }
 
-  function transition(next, sessionId = runtime.sessionId) {
+  function transition(next, sessionId = runtime.sessionId, options = {}) {
     if (!isSession(sessionId) || !STATES.has(next)) return false;
+    const current = runtime.lifecycle;
+    if (next === current) return true;
+    if (!options.force && !ALLOWED[current]?.has(next)) {
+      runtime.invalidTransitions += 1;
+      emit("ril:transport-invalid-transition", { from: current, to: next });
+      return false;
+    }
     runtime.lifecycle = next;
-    emit("ril:transport-state", { state: next });
+    emit("ril:transport-state", { state: next, previousState: current });
     return true;
   }
 
