@@ -215,10 +215,10 @@ def validate_source_chart(bundle: dict[str, Any]) -> TempoMap:
         raise ValueError("Combined Chart needs neutral chart summary data.")
 
     source_format = _source_format(bundle)
-    if not any(token in source_format for token in ("fnf", "psych", "codename")):
-        raise ValueError("Combined Chart currently requires an FNF chart with preserved player/opponent ownership.")
     if "combined" in source_format:
         raise ValueError("This chart is already a Combined Chart derivative.")
+    if not any(token in source_format for token in ("fnf", "psych", "codename")):
+        raise ValueError("Combined Chart currently requires an FNF chart with preserved player/opponent ownership.")
 
     key_count = int(_number(summary.get("key_count"), 0))
     if key_count not in range(4, 10):
