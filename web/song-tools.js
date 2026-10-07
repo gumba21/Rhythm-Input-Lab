@@ -25,6 +25,7 @@
 
   function sourceLabel(summary = {}, song = {}) {
     const raw = String(summary.source_format || summary.format || song.source_format || "").toLowerCase();
+    if (raw.includes("combined")) return "Combined Chart";
     if (raw.includes("quaver")) return "Quaver";
     if (raw.includes("osu")) return "osu!mania";
     if (raw.includes("fnf") || raw.includes("psych") || raw.includes("codename")) return "FNF";
@@ -152,7 +153,13 @@
   function sourceHtml(data) {
     const summary = data.bundle?.summary || {};
     const metadata = data.bundle?.song_metadata || {};
-    const provenance = [data.song?.imported_from && `Imported from ${data.song.imported_from}`, data.song?.shared_by && `Shared by ${data.song.shared_by}`, summary.original_charter && `Original charter ${summary.original_charter}`].filter(Boolean);
+    const provenance = [
+      summary.derived_from_song_name && `Derived from ${summary.derived_from_song_name}`,
+      summary.merge_strength && `Combined Chart strength: ${summary.merge_strength}`,
+      data.song?.imported_from && `Imported from ${data.song.imported_from}`,
+      data.song?.shared_by && `Shared by ${data.song.shared_by}`,
+      summary.original_charter && `Original charter ${summary.original_charter}`,
+    ].filter(Boolean);
     return `<section class="song-detail-section"><div class="song-identity-grid">${identityCard("Adapter", sourceLabel(summary, data.song))}${identityCard("Source format", summary.source_format || summary.format || "—")}${identityCard("Source file", summary.source_name || metadata.source_name || "—")}${identityCard("Song ID", summary.song_id || data.song?.song_id || "—")}</div></section><section class="song-detail-section"><h3>Source / provenance</h3><div class="list-sub" style="margin-top:8px;line-height:1.7">${provenance.length ? provenance.map(row => esc(row)).join("<br>") : "No additional sharing provenance is recorded."}</div></section>`;
   }
 
