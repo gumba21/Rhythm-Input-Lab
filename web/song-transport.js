@@ -93,11 +93,17 @@
       && (!folder || folder === runtime.folder);
   }
 
+  function canTransition(next, sessionId = runtime.sessionId, options = {}) {
+    if (!isSession(sessionId) || !STATES.has(next)) return false;
+    if (next === runtime.lifecycle) return true;
+    return Boolean(options.force || ALLOWED[runtime.lifecycle]?.has(next));
+  }
+
   function transition(next, sessionId = runtime.sessionId, options = {}) {
     if (!isSession(sessionId) || !STATES.has(next)) return false;
     const current = runtime.lifecycle;
     if (next === current) return true;
-    if (!options.force && !ALLOWED[current]?.has(next)) {
+    if (!canTransition(next, sessionId, options)) {
       runtime.invalidTransitions += 1;
       emit("ril:transport-invalid-transition", { from: current, to: next });
       return false;
@@ -251,7 +257,7 @@
 
   function prepare(positionMs, nextState = "ready", options = {}) {
     const sessionId = Number(options.sessionId ?? runtime.sessionId);
-    if (!isSession(sessionId)) return false;
+    if (!transition(nextState, sessionId)) return false;
     invalidateOperation("prepare");
     pauseRows(activeEntries());
     setAnchor(positionMs);
@@ -259,7 +265,6 @@
       applyProperties(row);
       setNodeTime(row, runtime.positionMs);
     }
-    transition(nextState, sessionId);
     emit("ril:transport-position", { positionMs: runtime.positionMs });
     return true;
   }
@@ -267,6 +272,7 @@
   function playAt(positionMs = runtime.positionMs, options = {}) {
     const sessionId = Number(options.sessionId ?? runtime.sessionId);
     if (!isSession(sessionId)) return false;
+    if (!transition("playing", sessionId)) return false;
     const token = invalidateOperation("play");
     const rows = activeEntries();
     pauseRows(rows);
@@ -275,8 +281,6 @@
       applyProperties(row);
       setNodeTime(row, runtime.positionMs);
     }
-    transition("playing", sessionId);
-
     const pending = [];
     for (const row of rows) {
       let promise;
@@ -302,24 +306,26 @@
 
   function pause(nextState = "paused", options = {}) {
     const sessionId = Number(options.sessionId ?? runtime.sessionId);
-    if (!isSession(sessionId)) return false;
+    if (!canTransition(nextState, sessionId)) {
+      transition(nextState, sessionId);
+      return false;
+    }
     const current = nowLogicalMs();
+    if (!transition(nextState, sessionId)) return false;
     invalidateOperation("pause");
     pauseRows(activeEntries());
     setAnchor(current);
-    transition(nextState, sessionId);
     emit("ril:transport-position", { positionMs: runtime.positionMs });
     return true;
   }
 
   function seek(positionMs, options = {}) {
     const sessionId = Number(options.sessionId ?? runtime.sessionId);
-    if (!isSession(sessionId)) return false;
+    if (!transition("seeking", sessionId)) return false;
     const resume = Boolean(options.resume);
     invalidateOperation("seek");
     pauseRows(activeEntries());
     setAnchor(clamp(positionMs, 0, runtime.durationMs || Number.POSITIVE_INFINITY));
-    transition("seeking", sessionId);
     for (const row of activeEntries()) {
       applyProperties(row);
       setNodeTime(row, runtime.positionMs);
@@ -332,11 +338,10 @@
 
   function finish(positionMs = runtime.durationMs || runtime.positionMs, options = {}) {
     const sessionId = Number(options.sessionId ?? runtime.sessionId);
-    if (!isSession(sessionId)) return false;
+    if (!transition("finished", sessionId)) return false;
     invalidateOperation("finish");
     pauseRows(activeEntries());
     setAnchor(positionMs);
-    transition("finished", sessionId);
     emit("ril:transport-position", { positionMs: runtime.positionMs });
     return true;
   }
