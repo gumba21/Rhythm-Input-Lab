@@ -106,8 +106,9 @@ def main() -> None:
         'modal.classList.remove("open")',
     )
 
-    # Visualizer disclosure adds a real panel child. Its grid must add a matching
-    # auto-sized row so status strips cannot inherit the playfield's 430px track.
+    # Visualizer disclosure adds a real panel child. Structural rows are assigned
+    # explicitly so compact replay/media status lines can never stretch into the
+    # flexible playfield slot, even if one status node is hidden later.
     assert_all(
         workspace,
         'details.id = "visualizerMoreControls"',
@@ -118,7 +119,18 @@ def main() -> None:
     assert_all(
         visualizer_layout_fix,
         "#view-visualizer .visualizer-panel:has(> #visualizerMoreControls)",
-        "grid-template-rows: auto auto auto auto minmax(430px, 1fr) auto;",
+        "max-content",
+        "minmax(430px, 1fr)",
+        "> #replayStatus",
+        "grid-row: 3;",
+        "> #audioStatus",
+        "grid-row: 4;",
+        "min-height: 0;",
+        "height: auto;",
+        "> .visualizer-canvas-wrap",
+        "grid-row: 5;",
+        "> .visualizer-bottom",
+        "grid-row: 6;",
         "#visualizerMoreControls:not([open]) > .visualizer-more-body",
         "display: none !important;",
         "#visualizerMoreControls[open] > .visualizer-more-body",
