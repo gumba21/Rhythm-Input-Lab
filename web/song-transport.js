@@ -327,11 +327,19 @@
   function setRate(rate, options = {}) {
     const sessionId = Number(options.sessionId ?? runtime.sessionId);
     if (!isSession(sessionId)) return false;
+    const current = nowLogicalMs();
     runtime.rate = clamp(rate, 0.05, 4);
+    setAnchor(current);
     for (const row of activeEntries()) applyProperties(row);
-    runtime.anchorMs = nowLogicalMs();
-    runtime.anchorPerfMs = performance.now();
     emit("ril:transport-rate", { rate: runtime.rate });
+    return true;
+  }
+
+  function setDuration(durationMs, options = {}) {
+    const sessionId = Number(options.sessionId ?? runtime.sessionId);
+    if (!isSession(sessionId)) return false;
+    runtime.durationMs = Math.max(0, Number(durationMs || 0));
+    runtime.positionMs = clamp(runtime.positionMs, 0, runtime.durationMs || Number.POSITIVE_INFINITY);
     return true;
   }
 
@@ -405,6 +413,7 @@
     finish,
     stop,
     setRate,
+    setDuration,
     setRoleVolume,
     registerStem,
     unregisterStem,
