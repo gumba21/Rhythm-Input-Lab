@@ -409,6 +409,15 @@
     }
   }
 
+  window.addEventListener("ril:practice-session-reset", () => {
+    runtime.lastPracticeAttempt = null;
+    const headline = q("#practiceWorkspaceResultHeadline");
+    if (headline) headline.innerHTML = "";
+    const resultButton = q("#practiceWorkspaceResults");
+    if (resultButton) resultButton.disabled = true;
+    if (runtime.activePracticePanel === "results") setPracticePanel(null);
+  });
+
   function installPractice() {
     if (runtime.practiceInstalled) return true;
     const stage = q("#view-practice .practice-stage-card");
