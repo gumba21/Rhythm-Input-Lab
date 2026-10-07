@@ -4,11 +4,14 @@
   const q = selector => document.querySelector(selector);
   const runtime = {
     folder: null,
-    loading: null,
+    sessionId: 0,
+    loadingToken: 0,
     stems: [],
     nodes: new Map(),
     meta: {},
   };
+
+  function transport() { return window.rilSongTransport || null; }
 
   function activeFolder() {
     if (q("#view-practice")?.classList.contains("active")) {
@@ -18,66 +21,66 @@
     return window.rilPracticeEngine?.practice?.songFolder || window.state?.viz?.songFolder || null;
   }
 
-  function practiceActive() {
-    return q("#view-practice")?.classList.contains("active");
-  }
-
-  function visualizerActive() {
-    return q("#view-visualizer")?.classList.contains("active");
-  }
-
-  function desiredPlayback() {
-    if (practiceActive()) return Boolean(window.rilPracticeEngine?.practice?.playing);
-    if (visualizerActive()) return Boolean(window.state?.viz?.playing);
-    return false;
-  }
-
-  function currentTimeSeconds() {
-    if (practiceActive()) return Math.max(0, Number(window.rilPracticeEngine?.practice?.currentMs || 0) / 1000);
-    return Math.max(0, Number(window.state?.viz?.currentMs || 0) / 1000);
-  }
-
-  function playbackRate() {
-    if (practiceActive()) return Math.max(0.05, Number(window.rilPracticeEngine?.practice?.speed || 1));
-    return Math.max(0.05, Number(window.state?.viz?.playbackRate || 1));
-  }
-
   function vocalsVolume() {
     return Math.max(0, Math.min(1, Number(window.state?.viz?.audioVolumes?.vocals ?? 1)));
   }
 
-  function masterAudio() {
-    const instrumental = q("#instrumentalAudio");
-    const vocals = q("#vocalsAudio");
-    if (instrumental?.src && window.state?.viz?.audioReady?.instrumental) return instrumental;
-    if (vocals?.src && window.state?.viz?.audioReady?.vocals) return vocals;
-    return null;
-  }
-
   function clearNodes() {
-    for (const audio of runtime.nodes.values()) {
-      audio.pause();
+    for (const [key, audio] of runtime.nodes) {
+      transport()?.unregisterStem?.(key, audio);
+      try { audio.pause(); } catch (_) {}
       audio.removeAttribute("src");
-      audio.load();
+      try { audio.load(); } catch (_) {}
       audio.remove();
     }
     runtime.nodes.clear();
     runtime.stems = [];
+    runtime.folder = null;
+    runtime.sessionId = 0;
   }
 
-  function ensureNode(row) {
-    const id = String(row.stem_id || row.stored_name || row.filename || "vocals");
-    if (runtime.nodes.has(id)) return runtime.nodes.get(id);
+  function sessionCurrent(folder, sessionId) {
+    const owner = transport();
+    return owner ? owner.isSession(sessionId, null, folder) : folder === activeFolder();
+  }
+
+  function stemKey(row) {
+    return `vocal-stem:${String(row.stem_id || row.stored_name || row.filename || "vocals")}`;
+  }
+
+  function ensureNode(row, sessionId) {
+    const key = stemKey(row);
+    if (runtime.nodes.has(key)) return runtime.nodes.get(key);
     const audio = document.createElement("audio");
     audio.className = "hidden ril-vocal-stem-audio";
     audio.preload = "metadata";
-    audio.dataset.rilStemId = id;
-    audio.dataset.rilStemName = String(row.filename || row.label || id);
-    audio.src = `${row.url}&v=${encodeURIComponent(row.updated_at || row.size_bytes || Date.now())}`;
+    audio.dataset.rilStemId = key;
+    audio.dataset.rilStemName = String(row.filename || row.label || key);
     audio.volume = vocalsVolume();
-    audio.playbackRate = playbackRate();
+    audio.src = `${row.url}&v=${encodeURIComponent(row.updated_at || row.size_bytes || Date.now())}`;
     document.body.appendChild(audio);
-    runtime.nodes.set(id, audio);
+    runtime.nodes.set(key, audio);
+
+    transport()?.registerStem?.(key, audio, {
+      sessionId,
+      role: "vocals",
+      dynamic: true,
+      ready: false,
+    });
+
+    audio.addEventListener("loadedmetadata", () => {
+      if (!sessionCurrent(runtime.folder, sessionId)) return;
+      transport()?.markReady?.(key, audio, {
+        sessionId,
+        role: "vocals",
+        dynamic: true,
+      });
+    }, { once: true });
+
+    audio.addEventListener("error", () => {
+      transport()?.markNotReady?.(key, audio);
+    });
+
     return audio;
   }
 
@@ -91,72 +94,62 @@
     }
   }
 
-  async function load(folder) {
-    if (!folder || runtime.loading === folder || runtime.folder === folder) return;
-    runtime.loading = folder;
+  async function load(folder, sessionId = transport()?.currentSession?.().id || 0) {
+    if (!folder || !sessionId || !sessionCurrent(folder, sessionId)) return;
+    const token = ++runtime.loadingToken;
     try {
       const response = await fetch(`/api/song-media/meta?folder=${encodeURIComponent(folder)}`, { cache: "no-store" });
       const payload = await response.json();
       if (!response.ok || !payload.ok) throw new Error(payload.error || `HTTP ${response.status}`);
-      if (folder !== activeFolder()) return;
+      if (token !== runtime.loadingToken || !sessionCurrent(folder, sessionId)) return;
+
       clearNodes();
+      runtime.folder = folder;
+      runtime.sessionId = sessionId;
       runtime.meta = payload.data || {};
       const primaryStored = runtime.meta?.vocals?.stored_name || "";
       const rows = Array.isArray(runtime.meta?.vocal_stems) ? runtime.meta.vocal_stems : [];
       runtime.stems = rows.filter(row => !row.primary && row.stored_name !== primaryStored);
-      for (const row of runtime.stems) ensureNode(row);
-      runtime.folder = folder;
+      for (const row of runtime.stems) ensureNode(row, sessionId);
       decorateStatuses();
     } catch (error) {
+      if (token !== runtime.loadingToken || !sessionCurrent(folder, sessionId)) return;
       console.warn("Could not load extra vocal stems", error);
-      if (folder === activeFolder()) {
-        clearNodes();
-        runtime.folder = folder;
-      }
-    } finally {
-      runtime.loading = null;
-    }
-  }
-
-  function syncNode(audio, target, playing, rate, volume) {
-    audio.playbackRate = rate;
-    audio.volume = volume;
-    const drift = audio.currentTime - target;
-    if (Math.abs(drift) > (playing ? 0.04 : 0.09)) {
-      try { audio.currentTime = target; } catch (_) {}
-    }
-    if (playing) {
-      if (audio.paused) audio.play().catch(() => {});
-    } else if (!audio.paused) {
-      audio.pause();
-    }
-  }
-
-  function tick() {
-    const folder = activeFolder();
-    if (folder && folder !== runtime.folder) load(folder);
-    if (!folder && runtime.folder) {
-      runtime.folder = null;
-      runtime.meta = {};
       clearNodes();
+      runtime.folder = folder;
+      runtime.sessionId = sessionId;
     }
-
-    if (runtime.nodes.size) {
-      const master = masterAudio();
-      const playing = desiredPlayback();
-      const target = master?.src ? Number(master.currentTime || 0) : currentTimeSeconds();
-      const rate = playbackRate();
-      const volume = vocalsVolume();
-      for (const audio of runtime.nodes.values()) syncNode(audio, target, playing, rate, volume);
-      decorateStatuses();
-    }
-    requestAnimationFrame(tick);
   }
+
+  function syncVolume() {
+    const volume = vocalsVolume();
+    transport()?.setRoleVolume?.("vocals", volume);
+    for (const audio of runtime.nodes.values()) audio.volume = volume;
+  }
+
+  window.addEventListener("ril:transport-session", event => {
+    const detail = event.detail || {};
+    runtime.loadingToken += 1;
+    clearNodes();
+    if (detail.folder && ["practice", "visualizer"].includes(detail.owner)) {
+      load(detail.folder, detail.sessionId);
+    }
+  });
+
+  document.addEventListener("input", event => {
+    if (["vocalsVolume", "practiceVocalsVolume"].includes(event.target?.id)) syncVolume();
+  }, true);
+
+  document.addEventListener("change", event => {
+    if (["vocalsVolume", "practiceVocalsVolume"].includes(event.target?.id)) syncVolume();
+  }, true);
+
+  const current = transport()?.currentSession?.();
+  if (current?.folder && ["practice", "visualizer"].includes(current.owner)) load(current.folder, current.id);
 
   window.rilMultiVocals = {
     load,
     clear: clearNodes,
     diagnostics: runtime,
   };
-  requestAnimationFrame(tick);
 })();
