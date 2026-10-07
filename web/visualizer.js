@@ -1416,7 +1416,6 @@ function attachAudio(event, kind) {
   audio.src = url;
   const sessionId = state.viz.sessionId;
   audio.volume = state.viz.audioVolumes[kind] ?? 1;
-  audio.playbackRate = state.viz.playbackRate;
   audio.onloadedmetadata = () => {
     if (!visualizerSessionCurrent(sessionId, state.viz.songFolder)) return;
     state.viz.audioReady[kind] = true;
