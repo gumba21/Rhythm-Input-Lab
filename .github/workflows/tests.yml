@@ -26,12 +26,13 @@ jobs:
             practice_attempt_backend.py practice_polish_self_test.py practice_engine_backpolish_self_test.py \
             reports_backend.py ril_export_reliability.py ril_export_jobs.py ril_export_thread_guard.py \
             ril_package_backend.py ril_package_self_test.py development_polish_self_test.py \
-            export_jobs_self_test.py workspace_ui_self_test.py self_test.py ril_version.py
+            export_jobs_self_test.py workspace_ui_self_test.py transport_integration_self_test.py self_test.py ril_version.py
       - name: Check JavaScript syntax
         run: |
           node --check web/app.js
           node --check web/visualizer.js
           node --check web/global-bridge.js
+          node --check web/song-transport.js
           node --check web/shared-results.js
           node --check web/visualizer-preferences.js
           node --check web/practice-polish.js
@@ -75,6 +76,8 @@ jobs:
           python practice_polish_self_test.py >> self-test.log 2>&1
           python practice_engine_backpolish_self_test.py >> self-test.log 2>&1
           python workspace_ui_self_test.py >> self-test.log 2>&1
+          python transport_integration_self_test.py >> self-test.log 2>&1
+          node transport_state_self_test.js >> self-test.log 2>&1
       - name: Upload self-test log
         if: always()
         uses: actions/upload-artifact@v4
