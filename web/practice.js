@@ -652,7 +652,6 @@
     audio.src = url;
     const sessionId = practice.sessionId;
     audio.volume = state.viz.audioVolumes?.[kind] ?? 1;
-    audio.playbackRate = practice.speed;
     audio.onloadedmetadata = () => {
       if (!practiceSessionCurrent(sessionId)) return;
       state.viz.audioReady[kind] = true;
