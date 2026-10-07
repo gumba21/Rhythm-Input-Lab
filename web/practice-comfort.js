@@ -746,8 +746,13 @@
     }
     const completedAt = p.lastAttempt?.completedAt || null;
     if (completedAt && completedAt !== runtime.observedAttempt) { runtime.observedAttempt = completedAt; recordAttempt(p.lastAttempt); renderQueue(); }
-    requestAnimationFrame(observe);
   }
 
-  requestAnimationFrame(observe);
+  window.addEventListener("ril:practice-session-reset", () => {
+    runtime.observedAttempt = null;
+    runtime.selectedAttemptId = null;
+    renderAll();
+  });
+  observe();
+  setInterval(observe, 150);
 })();
