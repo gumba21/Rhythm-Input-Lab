@@ -35,6 +35,9 @@ if errorlevel 1 goto :failed
 py transport_integration_self_test.py
 if errorlevel 1 goto :failed
 
+py combined_chart_self_test.py
+if errorlevel 1 goto :failed
+
 node transport_state_self_test.js
 if errorlevel 1 goto :failed
 
