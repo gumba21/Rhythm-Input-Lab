@@ -224,19 +224,6 @@
     updateComboHud();
   }
 
-  function readyAudio() {
-    return audioElements().filter(audio => {
-      const kind = audio.id === "vocalsAudio" ? "vocals" : "instrumental";
-      return state.viz.audioReady[kind];
-    });
-  }
-
-  function setAudioTime(audio, seconds) {
-    const duration = Number.isFinite(audio.duration) ? audio.duration : seconds;
-    const target = Math.max(0, Math.min(seconds, duration || seconds));
-    try { audio.currentTime = target; } catch (_) {}
-  }
-
   function installAudioSync() {
     updateAudioStatus = updateAudioDiagnostics;
     syncAudioTracks = force => transport()?.correctDrift?.(Boolean(force)) || 0;
