@@ -2,6 +2,17 @@
 
 ## 5.0.0-dev
 
+### FNF Combined Chart generator
+
+- adds a deterministic neutral-chart generator that treats the original FNF player/right-side stream as authoritative and selectively incorporates authored opponent material
+- fills clear player silence, permits density-safe vocal handoffs, and allows limited sparse accents at Balanced/Hard strengths instead of taking a naive union of both note streams
+- uses beat-relative phrase, handoff, jack, and density thresholds with small hard millisecond collision tolerances; player notes win near-simultaneous conflicts and v1 never invents or retimes note timestamps
+- validates same-lane duplicates, micro-jacks, sustain conflicts, accidental cross-side chords, simultaneous dense vocals, and local density spikes before accepting opponent notes
+- exposes Light, Balanced, and Hard merge strengths through Song Details → Chart / mechanics, with deterministic preview statistics and accepted/rejected-reason breakdowns before saving
+- saves a separate `Song Name — Combined` neutral RIL chart, preserves events/timing/mappings, reuses the existing audio unchanged, and records per-note source-owner/merge-reason/original-timing provenance
+- refuses FNF charts without reliable player/opponent ownership, both authored streams, valid lanes/timing, or a usable beat timeline instead of guessing missing data
+- adds `COMBINED_CHART.md`, an inspectable alternating-vocals fixture, and deterministic regressions for silence fill, overlap priority, handoffs, micro-jacks, sustains, density budgets, merge-strength monotonicity, source immutability, provenance round-trip, and clean incompatibility failures
+
 ### Transport and session stabilization
 
 - adds one shared Practice/Visualizer song transport with explicit unloaded/loading/ready/counting-in/playing/paused/seeking/finished lifecycle ownership
