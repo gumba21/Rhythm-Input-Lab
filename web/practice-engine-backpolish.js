@@ -45,6 +45,8 @@
   }
 
   function primaryAudio() {
+    const transportMaster = window.rilSongTransport?.masterNode?.();
+    if (transportMaster && hasPlayableAudio(transportMaster)) return transportMaster;
     const rows = audioElements().filter(hasPlayableAudio);
     return rows.find(audio => audio.id === "instrumentalAudio") || rows[0] || null;
   }
@@ -451,6 +453,35 @@
     if (changed) rebuildStats();
   }
 
+  function lowerBoundNoteTime(rows, target) {
+    let low = 0;
+    let high = rows.length;
+    while (low < high) {
+      const middle = (low + high) >> 1;
+      if (Number(rows[middle]?.time_ms || 0) < target) low = middle + 1;
+      else high = middle;
+    }
+    return low;
+  }
+
+  function visiblePracticeNotes(practice, current, behindMs, aheadMs) {
+    const rows = practice.renderNotes?.length ? practice.renderNotes : runtime.sortedNotes;
+    const maxSustain = Number(practice.maxSustainMs || 0);
+    const start = lowerBoundNoteTime(rows, current - behindMs - maxSustain);
+    const visible = [];
+    for (let index = start; index < rows.length; index += 1) {
+      const note = rows[index];
+      const time = Number(note.time_ms || 0);
+      if (time > current + aheadMs) break;
+      const end = noteEnd(note);
+      const state = practice.noteStates.get(note._practiceId);
+      const linger = state?.status === "missed" ? 280 : 100;
+      if (end >= current - behindMs && time >= practice.startMs - 1 && time < practice.endMs && current <= Math.max(end, time) + behindMs + linger) visible.push(note);
+    }
+    if (practice.renderMetrics) practice.renderMetrics.activeNotes = visible.length;
+    return visible;
+  }
+
   function drawBackpolishedPractice(now = performance.now()) {
     const practice = runtime.practice;
     const canvas = q("#practiceCanvas");
@@ -512,13 +543,7 @@
     ctx.lineTo(startX + fieldWidth, receptorY);
     ctx.stroke();
 
-    const visible = (practice.notes || []).filter(note => {
-      const time = Number(note.time_ms);
-      const end = noteEnd(note);
-      const state = practice.noteStates.get(note._practiceId);
-      const linger = state?.status === "missed" ? 280 : 100;
-      return end >= current - behindMs && time <= current + aheadMs && time >= practice.startMs - 1 && time < practice.endMs && current <= Math.max(end, time) + behindMs + linger;
-    });
+    const visible = visiblePracticeNotes(practice, current, behindMs, aheadMs);
     const previousViewMode = window.state?.viz?.viewMode;
     if (window.state?.viz) window.state.viz.viewMode = "chart";
 
@@ -630,6 +655,18 @@
         ctx.fillText(`${practice.lastDelta >= 0 ? "+" : ""}${Math.round(practice.lastDelta)} ms`, width / 2, height / 2 + 17);
       }
       ctx.restore();
+    }
+
+    if (practice.renderMetrics) {
+      practice.renderMetrics.frames += 1;
+      if (!practice.renderMetrics.lastSampleAt) {
+        practice.renderMetrics.lastSampleAt = now;
+        practice.renderMetrics.lastSampleFrames = practice.renderMetrics.frames;
+      } else if (now - practice.renderMetrics.lastSampleAt >= 1000) {
+        practice.renderMetrics.fps = (practice.renderMetrics.frames - practice.renderMetrics.lastSampleFrames) * 1000 / (now - practice.renderMetrics.lastSampleAt);
+        practice.renderMetrics.lastSampleAt = now;
+        practice.renderMetrics.lastSampleFrames = practice.renderMetrics.frames;
+      }
     }
   }
 
