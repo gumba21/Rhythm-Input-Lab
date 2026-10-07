@@ -423,7 +423,8 @@
   function tick() {
     installPrecisionSelector();
     installAccuracyGraph();
-    syncPrecisionSelector();
+    const rangeOpen = q("#practiceRangePanel")?.classList.contains("open");
+    if (rangeOpen || !q("#practiceContextHost")) syncPrecisionSelector();
 
     const attempt = engine.practice.lastAttempt;
     const attemptId = attempt?.completedAt || null;
@@ -431,12 +432,17 @@
       selector.lastAttemptId = attemptId;
       renderAccuracyGraph();
     }
-    requestAnimationFrame(tick);
   }
 
   installStyles();
   installPrecisionSelector();
   installAccuracyGraph();
   window.addEventListener("resize", () => renderAccuracyGraph());
-  requestAnimationFrame(tick);
+  window.addEventListener("ril:practice-session-reset", () => {
+    selector.lastAttemptId = null;
+    renderAccuracyGraph();
+    syncPrecisionSelector(true);
+  });
+  tick();
+  setInterval(tick, 100);
 })();
