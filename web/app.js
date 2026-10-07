@@ -56,7 +56,7 @@
                                                               loadScript('/quaver-import.js', () => {
                                                                 loadScript('/quaver-multi-import.js', () => {
                                                                   loadScript('/import-center.js', () => {
-                                                                    loadScript('/fnf-batch-import.js', () => loadScript('/workspace-ui.js'));
+                                                                    loadScript('/fnf-batch-import.js', () => loadScript('/combined-chart.js', () => loadScript('/workspace-ui.js')));
                                                                   });
                                                                 });
                                                               });
