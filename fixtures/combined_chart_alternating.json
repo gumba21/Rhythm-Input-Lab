@@ -1,0 +1,408 @@
+{
+  "summary": {
+    "format": "fnf_legacy_psych",
+    "source_format": "fnf_legacy_psych",
+    "importer_version": "fixture",
+    "source_name": "alternating-vocals.json",
+    "song_name": "Alternating Vocals Fixture",
+    "song_id": "alternating-vocals-fixture",
+    "key_count": 4,
+    "base_bpm": 120,
+    "duration_ms": 6600,
+    "player_notes": 11,
+    "opponent_notes": 12,
+    "event_count": 2
+  },
+  "notes": [
+    {
+      "time_ms": 0,
+      "end_ms": 0,
+      "lane": 0,
+      "raw_lane": 4,
+      "sustain_ms": 0,
+      "owner": "player",
+      "section_index": 0,
+      "must_hit_section": true,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 250,
+      "end_ms": 250,
+      "lane": 1,
+      "raw_lane": 5,
+      "sustain_ms": 0,
+      "owner": "player",
+      "section_index": 0,
+      "must_hit_section": true,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 500,
+      "end_ms": 750,
+      "lane": 2,
+      "raw_lane": 6,
+      "sustain_ms": 250,
+      "owner": "player",
+      "section_index": 0,
+      "must_hit_section": true,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 800,
+      "end_ms": 800,
+      "lane": 3,
+      "raw_lane": 3,
+      "sustain_ms": 0,
+      "owner": "opponent",
+      "section_index": 1,
+      "must_hit_section": false,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 1050,
+      "end_ms": 1050,
+      "lane": 0,
+      "raw_lane": 0,
+      "sustain_ms": 0,
+      "owner": "opponent",
+      "section_index": 1,
+      "must_hit_section": false,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 1300,
+      "end_ms": 1550,
+      "lane": 1,
+      "raw_lane": 1,
+      "sustain_ms": 250,
+      "owner": "opponent",
+      "section_index": 1,
+      "must_hit_section": false,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 1830,
+      "end_ms": 1830,
+      "lane": 0,
+      "raw_lane": 0,
+      "sustain_ms": 0,
+      "owner": "opponent",
+      "section_index": 1,
+      "must_hit_section": false,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 1910,
+      "end_ms": 1910,
+      "lane": 2,
+      "raw_lane": 2,
+      "sustain_ms": 0,
+      "owner": "opponent",
+      "section_index": 1,
+      "must_hit_section": false,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 1950,
+      "end_ms": 1950,
+      "lane": 3,
+      "raw_lane": 3,
+      "sustain_ms": 0,
+      "owner": "opponent",
+      "section_index": 1,
+      "must_hit_section": false,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 1900,
+      "end_ms": 1900,
+      "lane": 0,
+      "raw_lane": 4,
+      "sustain_ms": 0,
+      "owner": "player",
+      "section_index": 2,
+      "must_hit_section": true,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 2150,
+      "end_ms": 2150,
+      "lane": 1,
+      "raw_lane": 5,
+      "sustain_ms": 0,
+      "owner": "player",
+      "section_index": 2,
+      "must_hit_section": true,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 2400,
+      "end_ms": 2900,
+      "lane": 2,
+      "raw_lane": 6,
+      "sustain_ms": 500,
+      "owner": "player",
+      "section_index": 2,
+      "must_hit_section": true,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 2600,
+      "end_ms": 2600,
+      "lane": 2,
+      "raw_lane": 2,
+      "sustain_ms": 0,
+      "owner": "opponent",
+      "section_index": 2,
+      "must_hit_section": true,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 3500,
+      "end_ms": 4000,
+      "lane": 3,
+      "raw_lane": 3,
+      "sustain_ms": 500,
+      "owner": "opponent",
+      "section_index": 3,
+      "must_hit_section": false,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 5000,
+      "end_ms": 5000,
+      "lane": 0,
+      "raw_lane": 4,
+      "sustain_ms": 0,
+      "owner": "player",
+      "section_index": 4,
+      "must_hit_section": true,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 5125,
+      "end_ms": 5125,
+      "lane": 1,
+      "raw_lane": 5,
+      "sustain_ms": 0,
+      "owner": "player",
+      "section_index": 4,
+      "must_hit_section": true,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 5250,
+      "end_ms": 5250,
+      "lane": 2,
+      "raw_lane": 6,
+      "sustain_ms": 0,
+      "owner": "player",
+      "section_index": 4,
+      "must_hit_section": true,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 5375,
+      "end_ms": 5375,
+      "lane": 3,
+      "raw_lane": 7,
+      "sustain_ms": 0,
+      "owner": "player",
+      "section_index": 4,
+      "must_hit_section": true,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 5500,
+      "end_ms": 5500,
+      "lane": 0,
+      "raw_lane": 4,
+      "sustain_ms": 0,
+      "owner": "player",
+      "section_index": 4,
+      "must_hit_section": true,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 5060,
+      "end_ms": 5060,
+      "lane": 2,
+      "raw_lane": 2,
+      "sustain_ms": 0,
+      "owner": "opponent",
+      "section_index": 4,
+      "must_hit_section": true,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 5185,
+      "end_ms": 5185,
+      "lane": 3,
+      "raw_lane": 3,
+      "sustain_ms": 0,
+      "owner": "opponent",
+      "section_index": 4,
+      "must_hit_section": true,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 5310,
+      "end_ms": 5310,
+      "lane": 0,
+      "raw_lane": 0,
+      "sustain_ms": 0,
+      "owner": "opponent",
+      "section_index": 4,
+      "must_hit_section": true,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    },
+    {
+      "time_ms": 5435,
+      "end_ms": 5435,
+      "lane": 1,
+      "raw_lane": 1,
+      "sustain_ms": 0,
+      "owner": "opponent",
+      "section_index": 4,
+      "must_hit_section": true,
+      "bpm": 120,
+      "note_type": "",
+      "extra_data": []
+    }
+  ],
+  "events": [
+    {
+      "time_ms": 1000,
+      "name": "Camera Zoom",
+      "value1": "0.05",
+      "value2": "",
+      "source": "song.events",
+      "group_index": 0,
+      "event_index": 0,
+      "raw": [
+        "Camera Zoom",
+        "0.05",
+        ""
+      ]
+    },
+    {
+      "time_ms": 4800,
+      "name": "Flash",
+      "value1": "",
+      "value2": "",
+      "source": "song.events",
+      "group_index": 1,
+      "event_index": 0,
+      "raw": [
+        "Flash",
+        "",
+        ""
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "section_index": 0,
+      "time_ms": 0,
+      "bpm": 120,
+      "change_bpm": false,
+      "must_hit_section": true,
+      "length_in_steps": 16
+    },
+    {
+      "section_index": 1,
+      "time_ms": 2000,
+      "bpm": 120,
+      "change_bpm": false,
+      "must_hit_section": false,
+      "length_in_steps": 16
+    },
+    {
+      "section_index": 2,
+      "time_ms": 4000,
+      "bpm": 120,
+      "change_bpm": false,
+      "must_hit_section": true,
+      "length_in_steps": 16
+    },
+    {
+      "section_index": 3,
+      "time_ms": 6000,
+      "bpm": 120,
+      "change_bpm": false,
+      "must_hit_section": false,
+      "length_in_steps": 16
+    }
+  ],
+  "mappings": {
+    "note_types": {
+      "": {
+        "category": "normal",
+        "gameplay": true,
+        "should_press": true
+      }
+    },
+    "event_types": {
+      "Camera Zoom": {
+        "category": "visual",
+        "gameplay": true,
+        "expected_presses": 0
+      },
+      "Flash": {
+        "category": "visual",
+        "gameplay": true,
+        "expected_presses": 0
+      }
+    }
+  },
+  "song_metadata": {
+    "stage": "fixture-stage",
+    "player1": "bf",
+    "player2": "dad",
+    "fixture": "alternating-vocals"
+  }
+}

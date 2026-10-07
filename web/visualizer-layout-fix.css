@@ -1,0 +1,61 @@
+/* Visualizer disclosure/status layout repair.
+   workspace-ui.js inserts #visualizerMoreControls into the legacy panel. Give
+   each structural child an explicit track so compact status rows can never
+   inherit/stretch into the playfield slot. */
+
+#view-visualizer .visualizer-panel:has(> #visualizerMoreControls) {
+  grid-template-rows:
+    max-content
+    max-content
+    max-content
+    max-content
+    minmax(430px, 1fr)
+    max-content;
+  align-content: stretch;
+}
+
+#view-visualizer .visualizer-panel:has(> #visualizerMoreControls) > .visualizer-toolbar {
+  grid-row: 1;
+}
+
+#visualizerMoreControls {
+  grid-row: 2;
+  min-height: 0;
+  height: auto;
+  align-self: start;
+}
+
+#view-visualizer .visualizer-panel:has(> #visualizerMoreControls) > #replayStatus {
+  grid-row: 3;
+}
+
+#view-visualizer .visualizer-panel:has(> #visualizerMoreControls) > #audioStatus {
+  grid-row: 4;
+}
+
+#view-visualizer .visualizer-panel:has(> #visualizerMoreControls) > #replayStatus,
+#view-visualizer .visualizer-panel:has(> #visualizerMoreControls) > #audioStatus {
+  min-height: 0;
+  height: auto;
+  align-self: start;
+  line-height: 1.35;
+}
+
+#view-visualizer .visualizer-panel:has(> #visualizerMoreControls) > .visualizer-canvas-wrap {
+  grid-row: 5;
+  min-height: 430px;
+}
+
+#view-visualizer .visualizer-panel:has(> #visualizerMoreControls) > .visualizer-bottom {
+  grid-row: 6;
+}
+
+/* The disclosure body has an inline flex declaration. Make closed ownership
+   explicit so it never reserves layout space regardless of UA <details> CSS. */
+#visualizerMoreControls:not([open]) > .visualizer-more-body {
+  display: none !important;
+}
+
+#visualizerMoreControls[open] > .visualizer-more-body {
+  display: flex !important;
+}

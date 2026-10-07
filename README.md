@@ -1,8 +1,8 @@
 # Rhythm Input Lab
 
-Rhythm Input Lab is a local rhythm-game input recorder, FNF chart importer, and chart/input replay visualizer.
+Rhythm Input Lab is a local rhythm-game workspace for recording inputs, importing charts, replaying attempts, practicing difficult sections, and analyzing performance.
 
-The current development version is read from the root `VERSION` file. The supported launchers patch the backend, recorder, reports, and browser label from that same value.
+The current development version is read from the root `VERSION` file. The supported launchers patch the backend, recorder, reports, import adapters, package tools, and browser label from that same value.
 
 ## Windows setup
 
@@ -11,44 +11,131 @@ The current development version is read from the root `VERSION` file. The suppor
 3. Run `run.bat`.
 4. Keep the console window open while using the browser GUI.
 
-The server binds only to `127.0.0.1`. Charts, recordings, and locally attached audio are not uploaded by the app.
+The server binds only to `127.0.0.1`. Charts, recordings, locally attached audio, imported maps, and imported/exported `.ril` packages are not uploaded by the app.
 
 ## Current features
 
-- global 4K–9K physical input recording
-- optional separate dodge input
+- global 4K–9K physical input recording with optional separate dodge input
 - legacy/Psych-style FNF chart and event importing
+- standalone `.osu` and multi-difficulty `.osz` osu!mania importing
+- standalone `.qua` and multi-difficulty `.qp` Quaver importing
+- multi-file and folder-based Quaver importing with automatic matching of loose MP3, OGG, WAV, FLAC, M4A, AAC, OPUS, and WEBM audio from each chart's `AudioFile`
+- selectable 4K–9K Quaver charts with taps, long notes, mines, BPM/time-signature changes, SV, scroll-speed factors, timing groups, bookmarks, metadata, and automatic `.qp` audio discovery
+- selectable 4K–9K osu!mania difficulties with taps, holds, BPM changes, inherited scroll-velocity points, breaks, mapper metadata, beatmap IDs, and automatic `.osz` audio discovery
+- per-format capability previews that distinguish preserved, extension-stored, approximated, and currently unrendered data
+- one searchable, naturally sorted song browser shared by Visualizer, Practice, and Analysis
 - chart-only, replay-only, and chart/replay comparison views
-- automatic and manual replay alignment
-- configurable Sick, Good, Bad, Shit, and miss windows
-- safe-frame-derived outer hit window
-- ghost-tapping toggle
-- note splashes, downscroll, holds, opponent notes, and event rails
-- hurt-note, mine, and death-note hazard mapping
-- supplied hurt-note heads, sustains, and hurt splash atlas
-- hazard avoided/hit counts, timeline markers, and inspector details
-- optional local instrumental and vocals playback
+- automatic/manual replay alignment with one cached result shared by Visualizer and Analysis
+- configurable Sick, Good, Bad, Shit, miss, safe-frame, ghost-tapping, hold, and hazard behavior
+- playable 4K–9K Practice with synchronized count-ins, audio, speed controls, precise ranges, looping, holds, hazards, saved setups, goals, collections, history, and full-song attempt saving
+- FNF-informed Practice engine backpolish with an audio-anchored conductor clock, precise event timestamps, bounded drift correction, time-derived note movement, receptor press/confirm feedback, sustain clipping, precise hold releases, and focus-loss recovery
+- descriptive performance analysis for sections, lanes, timing, consistency, strict rhythm patterns, likely miss causes, and attempt comparison
+- descriptive Practice run data including mean offset, timing spread, median absolute offset, hit rate, chart density, FC state, session totals, and local-history totals
+- saved per-song instrumental and vocals playback with byte-range seeking
+- portable `.ril` song packages containing the compact neutral chart, mechanic mappings, metadata, sharing username, and optional instrumental/vocals audio
+- non-blocking local `.ril` export jobs with live stage/byte progress, cancellation, partial-file cleanup, and permanent saves inside `RIL Exports`
+- verified `.ril` import preview, SHA-256 integrity checks, duplicate handling, provenance, and immediate Practice/Visualizer access
+- Discord export target with an exact 8,000,000-byte package limit and a separate unrestricted full-package target
 
-Reconstructed judgments are estimates derived from physical input. A game may use different timing, sustain, health, ghost-tapping, or scripted-mechanic behavior.
+Reconstructed judgments are estimates derived from physical input. Rhythm Input Lab presents measurements and classifications for the user to interpret; it does not act as an automated coach or claim that configured judgments reproduce an imported game's official scoring.
+
+## Practice controls
+
+Practice displays a synchronized `3 · 2 · 1 · GO!` count-in on fresh starts, retries, and loop restarts. Resuming a paused run remains immediate.
+
+The current development build timestamps lane presses and releases from their browser input events, then reconciles them against the conductor clock. Note movement remains derived from authored note time rather than accumulated frame movement. Losing focus pauses the run and releases held visual/input state instead of leaving lanes stuck.
+
+Common shortcuts:
+
+- `Enter`: start a run
+- `P` or `Escape`: pause/resume; Escape also cancels an active count-in
+- `R`: retry
+- `L`: toggle looping when L is not a bound lane key
+- `-` / `+`: step through Practice speed presets
+- `[` / `]`: seek one second while paused; hold Shift for five seconds
+- `Home` / `End`: jump to the selected range edges
+- `,` / `.`: previous/next timing section
+
+See [`PRACTICE_ENGINE_BACKPOLISH.md`](PRACTICE_ENGINE_BACKPOLISH.md) for the conductor, timestamp reconciliation, sustain, and rendering design.
+
+## Import Quaver
+
+Open **Import** and choose **Quaver**, then use one of these paths:
+
+- drop a `.qp` mapset, which can contain multiple `.qua` difficulties and shared audio
+- select one or more loose `.qua` / `.qp` files
+- choose the entire Quaver song folder so RIL can match every standalone chart's `AudioFile` automatically
+
+The preview lists every supported 4K–9K chart before anything is written and reports mines, holds, SV, scroll-speed factors, active actions per second, media availability, and fidelity boundaries. Mines become neutral hazards; timing groups, keysounds, samples, bookmarks, editor data, and source metadata are retained without creating a Quaver-specific gameplay runtime.
+
+A standalone `.qua` selected by itself remains valid as a chart-only import. Selecting its folder or selecting the chart together with its referenced audio imports playback at the same time.
+
+See [`QUAVER_IMPORT.md`](QUAVER_IMPORT.md) for detailed behavior, archive protections, and current compatibility limits.
+
+## Import osu!mania
+
+Open **Import**, then drop either:
+
+- an `.osz` beatmap set, which can contain multiple difficulties and its audio
+- a standalone `.osu` chart, which imports the chart while audio can be attached afterward
+
+The preview lists every supported 4K–9K mania difficulty before anything is written. Choose the difficulties to import, then open any result directly in Practice or Visualizer. Each imported chart is normalized into the same RIL runtime model used by FNF, Quaver, and portable `.ril` songs, so Analysis, saved attempts, collections, and `.ril` export work without a separate osu!-specific runtime.
+
+The adapter preserves source timing and metadata as neutral chart data and source extensions. Non-mania charts and unsupported key modes are listed as skipped rather than silently misread. See [`OSU_IMPORT.md`](OSU_IMPORT.md) for the detailed behavior and limitations.
+
+## Portable `.ril` songs
+
+Open a song in the library and choose **Export .ril**. The local Python app starts a background export job immediately, while the modal reports the current stage, source file, percentage, and bytes processed. The rest of the local website remains usable while the package is written.
+
+Completed packages are saved permanently under the configured output folder's `RIL Exports` directory. Cancelling removes the incomplete `.partial` file. The completed modal can open the folder or download an additional browser copy.
+
+Attempts and personal statistics are excluded. The recipient can import the package from the Import page, inspect its metadata and audio contents, then play it immediately.
+
+The default Discord target estimates the selected contents and refuses the finished export when it exceeds exactly 8,000,000 bytes. It removes optional selections rather than silently transcoding or lowering audio quality. The Full package target keeps the normal package limits.
+
+The package and compact neutral chart specification is documented in [`RIL_FORMAT.md`](RIL_FORMAT.md).
 
 ## Project files
 
 ```text
 .
-├── app.py                    version-aware GUI launcher
-├── backend.py                local browser GUI backend
-├── console.py                version-aware console launcher
-├── rhythm_input_lab_core.py  recorder and analysis core
-├── fnf_importer.py           FNF normalization and comparison
-├── self_test.py              package smoke tests
-├── VERSION                   single application version source
-├── web/                      browser interface and atlases
-├── run.bat                   start the GUI
-├── run-console.bat           start the console fallback
-└── run-tests.bat             run the smoke tests
+├── app.py                              version-aware GUI launcher
+├── backend.py                          local browser GUI backend
+├── rhythm_input_lab_core.py            recorder and analysis core
+├── fnf_importer.py                     FNF normalization and compatibility adapter
+├── osu_importer.py                     osu!mania .osu/.osz parser and neutral adapter
+├── osu_import_backend.py               chunked osu!mania preview/import backend
+├── osu_importer_self_test.py           osu!mania parser and archive safety tests
+├── quaver_importer.py                  Quaver .qua/.qp parser and neutral adapter
+├── quaver_import_backend.py            chunked Quaver preview/import backend
+├── quaver_loose_audio.py               loose-folder audio upload and import adapter
+├── quaver_importer_self_test.py        Quaver parser and archive safety tests
+├── ril_package_backend.py              neutral RIL chart and portable package backend
+├── ril_export_reliability.py           persistent atomic package writer
+├── ril_export_jobs.py                  local background export queue and progress API
+├── discord_export_backend.py           exact Discord package-size enforcement
+├── neutral_chart_polish.py             explicit neutral timing-section positions
+├── export_jobs_self_test.py            export queue and folder-audio regression tests
+├── practice_polish_self_test.py        Practice polish and Discord export tests
+├── practice_engine_backpolish_self_test.py
+│                                        Practice clock/input/release smoke checks
+├── PRACTICE_ENGINE_BACKPOLISH.md       Practice engine architecture notes
+├── RIL_FORMAT.md                       portable package and compact chart specification
+├── OSU_IMPORT.md                       osu!mania import behavior and limitations
+├── QUAVER_IMPORT.md                    Quaver import behavior and limitations
+├── THIRD_PARTY_NOTICES.md              source references, licenses, and attribution
+├── self_test.py                        application smoke tests
+├── VERSION                             single application version source
+├── web/
+│   ├── practice-engine-backpolish.js   precise conductor, input, and final renderer
+│   └── practice-engine-release-reconcile.js
+│                                        precise sustain-release correction
+├── run.bat                             start the GUI
+├── run-console.bat                     start the console fallback
+└── run-tests.bat                       run the smoke tests
 ```
 
-Runtime songs, attempts, and reports are stored in the output folder selected in Settings, not in the repository.
+Runtime songs, attempts, reports, saved audio, and normalized charts are stored in the output folder selected in Settings, not in the repository.
 
 ## Development workflow
 

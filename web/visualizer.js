@@ -44,6 +44,11 @@ const state = {
     standaloneReplay: false,
     selectedObject: null,
     renderObjects: [],
+    sessionId: 0,
+    loadGeneration: 0,
+    lifecycle: "unloaded",
+    renderCache: { bundle: null, attempt: null, playerNotes: [], opponentNotes: [], events: [], lanePresses: [], dodgePresses: [], maxSustain: { player: 0, opponent: 0 } },
+    renderMetrics: { frames: 0, fps: 0, lastSampleAt: 0, lastSampleFrames: 0, activeNotes: 0, activeEvents: 0, timelineDraws: 0, eventUiUpdates: 0, loopCount: 1, lastTimelineAt: 0, lastEventsAt: 0 },
   },
 };
 
@@ -253,6 +258,15 @@ function toggleValue(element) {
   const next = element.dataset.on !== "1";
   setToggle(element, next);
   return next;
+}
+
+function songTransport() {
+  return window.rilSongTransport || null;
+}
+
+function visualizerSessionCurrent(sessionId = state.viz.sessionId, folder = state.viz.songFolder) {
+  const transport = songTransport();
+  return !transport || transport.isSession(sessionId, "visualizer", folder);
 }
 
 function go(view) {
@@ -616,7 +630,7 @@ function bindVisualizer() {
   $("#themeMode").addEventListener("change", event => { state.viz.theme = event.target.value; state.viz.xray = event.target.value === "xray"; updateVizButtons(); drawVisualizer(); });
   $("#playbackRate").addEventListener("change", event => {
     state.viz.playbackRate = Number(event.target.value);
-    for (const audio of audioElements()) audio.playbackRate = state.viz.playbackRate;
+    songTransport()?.setRate?.(state.viz.playbackRate, { sessionId: state.viz.sessionId });
   });
   $("#scrollSpeed").addEventListener("input", event => { state.viz.scrollScale = Number(event.target.value); drawVisualizer(); });
   $("#opponentToggle").addEventListener("click", () => { state.viz.showOpponent = !state.viz.showOpponent; updateVizButtons(); drawVisualizer(); });
@@ -652,6 +666,8 @@ function bindVisualizer() {
       const primary = primaryAudio();
       if (!primary || primary.ended) {
         state.viz.playing = false;
+        state.viz.lifecycle = "finished";
+        songTransport()?.finish?.(state.viz.durationMs, { sessionId: state.viz.sessionId });
         updatePlayButton();
       }
     });
@@ -843,7 +859,10 @@ function updateReplayStatus() {
 }
 
 function clearCurrentReplay() {
+  if (state.viz.playing) state.viz.currentMs = songTransport()?.currentTimeMs?.() ?? state.viz.currentMs;
   state.viz.playing = false;
+  state.viz.lifecycle = state.viz.bundle ? "paused" : "unloaded";
+  songTransport()?.pause?.(state.viz.bundle ? "paused" : "unloaded", { sessionId: state.viz.sessionId });
   updatePlayButton();
   state.viz.attempt = null;
   state.viz.attemptFolder = null;
@@ -875,8 +894,33 @@ function clearCurrentReplay() {
 async function loadVisualizer(songFolder, attemptFolder = null) {
   closeSongModal();
   go("visualizer");
+  const generation = ++state.viz.loadGeneration;
+  const transport = songTransport();
+  state.viz.sessionId = transport?.beginSession?.("visualizer", songFolder, { rate: state.viz.playbackRate, positionMs: 0 }) || generation;
+  state.viz.lifecycle = "loading";
+  state.viz.songFolder = songFolder;
+  state.viz.bundle = null;
+  state.viz.playing = false;
+  state.viz.currentMs = 0;
+  state.viz.durationMs = 0;
+  state.viz.chartDurationMs = 0;
+  state.viz.attempt = null;
+  state.viz.attemptFolder = null;
+  state.viz.comparison = null;
+  state.viz.attemptSource = null;
+  state.viz.importedReplayName = "";
+  state.viz.selectedObject = null;
+  state.viz.renderCache.bundle = null;
+  state.viz.renderCache.attempt = null;
+  updatePlayButton();
+  updateReplayStatus();
+  $("#visualizerTitle").textContent = "Loading…";
+  $("#visualizerSubtitle").textContent = "Opening chart and media.";
+  $("#canvasEmpty").classList.remove("hidden");
+  window.dispatchEvent(new CustomEvent("ril:visualizer-session-reset", { detail: { folder: songFolder, sessionId: state.viz.sessionId } }));
   try {
     const data = await api(`/api/song?folder=${encodeURIComponent(songFolder)}`);
+    if (generation !== state.viz.loadGeneration || !visualizerSessionCurrent(state.viz.sessionId, songFolder)) return;
     if (!data.bundle) throw new Error("This song does not have an imported chart.");
     state.viz.bundle = data.bundle;
     state.viz.songFolder = songFolder;
@@ -894,6 +938,12 @@ async function loadVisualizer(songFolder, attemptFolder = null) {
     state.viz.importedReplayName = "";
     state.viz.standaloneReplay = false;
     state.viz.selectedObject = null;
+    state.viz.lifecycle = "ready";
+    state.viz.renderCache.bundle = null;
+    state.viz.renderCache.attempt = null;
+    transport?.setDuration?.(state.viz.durationMs, { sessionId: state.viz.sessionId });
+    transport?.setRate?.(state.viz.playbackRate, { sessionId: state.viz.sessionId });
+    transport?.prepare?.(0, "ready", { sessionId: state.viz.sessionId });
     updateReplayStatus();
     $("#visualizerTitle").textContent = data.song.song_name;
     const authoredHazards = data.bundle.notes.filter(note => note.owner === "player" && note.lane !== null && note.lane !== undefined && isHazardNote(note)).length;
@@ -911,11 +961,19 @@ async function loadVisualizer(songFolder, attemptFolder = null) {
       updateVisualizerStats();
       resizeCanvases();
     }
-  } catch (error) { toast(error.message, "error", 7000); }
+  } catch (error) {
+    if (generation !== state.viz.loadGeneration || !visualizerSessionCurrent(state.viz.sessionId, songFolder)) return;
+    state.viz.lifecycle = "unloaded";
+    transport?.transition?.("unloaded", state.viz.sessionId);
+    toast(error.message, "error", 7000);
+  }
 }
 
 async function loadAttemptForCurrent(attemptFolder) {
+  if (state.viz.playing) state.viz.currentMs = songTransport()?.currentTimeMs?.() ?? state.viz.currentMs;
   state.viz.playing = false;
+  state.viz.lifecycle = state.viz.bundle ? "paused" : "unloaded";
+  songTransport()?.pause?.(state.viz.bundle ? "paused" : "unloaded", { sessionId: state.viz.sessionId });
   updatePlayButton();
   if (!attemptFolder) {
     state.viz.attempt = null;
@@ -932,7 +990,12 @@ async function loadAttemptForCurrent(attemptFolder) {
     return;
   }
   try {
-    state.viz.attempt = await api(`/api/attempt?folder=${encodeURIComponent(state.viz.songFolder)}&attempt=${encodeURIComponent(attemptFolder)}`);
+    const sessionId = state.viz.sessionId;
+    const songFolder = state.viz.songFolder;
+    const loadedAttempt = await api(`/api/attempt?folder=${encodeURIComponent(songFolder)}&attempt=${encodeURIComponent(attemptFolder)}`);
+    if (!visualizerSessionCurrent(sessionId, songFolder)) return;
+    state.viz.attempt = loadedAttempt;
+    state.viz.renderCache.attempt = null;
     state.viz.attemptFolder = attemptFolder;
     state.viz.attemptSource = "saved";
     state.viz.comparisonEnabled = true;
@@ -990,12 +1053,22 @@ function expectedChartNotes() {
   });
 }
 
+function ensureReplayCache() {
+  const cache = state.viz.renderCache;
+  if (cache.attempt === state.viz.attempt) return cache;
+  cache.attempt = state.viz.attempt;
+  const presses = state.viz.attempt?.presses || [];
+  cache.lanePresses = presses.filter(press => press.role === "lane" && Number.isInteger(press.lane)).sort((a, b) => Number(a.time_ms || 0) - Number(b.time_ms || 0));
+  cache.dodgePresses = presses.filter(press => press.role === "dodge").sort((a, b) => Number(a.time_ms || 0) - Number(b.time_ms || 0));
+  return cache;
+}
+
 function lanePresses() {
-  return (state.viz.attempt?.presses || []).filter(press => press.role === "lane" && Number.isInteger(press.lane));
+  return ensureReplayCache().lanePresses;
 }
 
 function dodgePresses() {
-  return (state.viz.attempt?.presses || []).filter(press => press.role === "dodge");
+  return ensureReplayCache().dodgePresses;
 }
 
 function candidateOffsets(notes, presses) {
@@ -1258,45 +1331,26 @@ function audioElement(kind) {
 }
 
 function primaryAudio() {
-  if (state.viz.audioReady.instrumental) return $("#instrumentalAudio");
-  if (state.viz.audioReady.vocals) return $("#vocalsAudio");
-  return null;
+  return songTransport()?.masterNode?.()
+    || (state.viz.audioReady.instrumental ? $("#instrumentalAudio") : state.viz.audioReady.vocals ? $("#vocalsAudio") : null);
 }
 
 function syncAudioTracks(force = false) {
-  const target = state.viz.currentMs / 1000;
-  const primary = primaryAudio();
-  for (const audio of audioElements()) {
-    const kind = audio.id === "vocalsAudio" ? "vocals" : "instrumental";
-    if (!state.viz.audioReady[kind]) continue;
-    audio.playbackRate = state.viz.playbackRate;
-    if (force || Math.abs(audio.currentTime - target) > 0.045) {
-      try { audio.currentTime = Math.max(0, target); } catch (_) {}
-    }
-  }
-  if (primary) {
-    for (const audio of audioElements()) {
-      if (audio === primary) continue;
-      const kind = audio.id === "vocalsAudio" ? "vocals" : "instrumental";
-      if (state.viz.audioReady[kind] && Math.abs(audio.currentTime - primary.currentTime) > 0.035) {
-        try { audio.currentTime = primary.currentTime; } catch (_) {}
-      }
-    }
-  }
+  return songTransport()?.correctDrift?.(Boolean(force)) || 0;
 }
 
 function togglePlayback() {
-  if (!state.viz.bundle) return;
-  state.viz.playing = !state.viz.playing;
-  state.viz.lastFrame = performance.now();
-  if (primaryAudio()) {
-    syncAudioTracks(true);
-    for (const audio of audioElements()) {
-      const kind = audio.id === "vocalsAudio" ? "vocals" : "instrumental";
-      if (!state.viz.audioReady[kind]) continue;
-      if (state.viz.playing) audio.play().catch(() => {});
-      else audio.pause();
-    }
+  if (!state.viz.bundle || state.viz.lifecycle === "loading") return;
+  if (state.viz.playing) {
+    state.viz.currentMs = songTransport()?.currentTimeMs?.() ?? state.viz.currentMs;
+    state.viz.playing = false;
+    state.viz.lifecycle = "paused";
+    songTransport()?.pause?.("paused", { sessionId: state.viz.sessionId });
+  } else {
+    state.viz.playing = true;
+    state.viz.lifecycle = "playing";
+    state.viz.lastFrame = performance.now();
+    songTransport()?.playAt?.(state.viz.currentMs, { sessionId: state.viz.sessionId });
   }
   updatePlayButton();
 }
@@ -1304,8 +1358,17 @@ function togglePlayback() {
 function updatePlayButton() { $("#playButton").textContent = state.viz.playing ? "Ⅱ" : "▶"; }
 
 function seekTo(ms) {
+  const wasPlaying = state.viz.playing;
   state.viz.currentMs = Math.max(0, Math.min(state.viz.durationMs || 0, Number(ms || 0)));
-  syncAudioTracks(true);
+  state.viz.lifecycle = "seeking";
+  songTransport()?.seek?.(state.viz.currentMs, {
+    sessionId: state.viz.sessionId,
+    resume: wasPlaying,
+    nextState: wasPlaying ? "playing" : "paused",
+  });
+  state.viz.playing = wasPlaying;
+  state.viz.lifecycle = wasPlaying ? "playing" : "paused";
+  state.viz.lastFrame = performance.now();
   updateTimeUI(); drawVisualizer(); drawTimeline(); updateEventsNow();
 }
 
@@ -1314,6 +1377,7 @@ function setAudioVolume(kind, rawValue) {
   state.viz.audioVolumes[kind] = value;
   const audio = audioElement(kind);
   if (audio) audio.volume = value;
+  songTransport()?.setRoleVolume?.(kind === "instrumental" ? "instrumental" : "vocals", value);
   const output = kind === "vocals" ? $("#vocalsVolumeLabel") : $("#instrumentalVolumeLabel");
   if (output) output.textContent = `${Math.round(value * 100)}%`;
 }
@@ -1327,6 +1391,7 @@ function updateAudioStatus() {
 function clearAudio(kind) {
   const audio = audioElement(kind);
   if (!audio) return;
+  songTransport()?.markNotReady?.(kind, audio);
   audio.pause();
   if (audio.dataset.url) URL.revokeObjectURL(audio.dataset.url);
   audio.removeAttribute("src");
@@ -1349,12 +1414,13 @@ function attachAudio(event, kind) {
   const url = URL.createObjectURL(file);
   audio.dataset.url = url;
   audio.src = url;
+  const sessionId = state.viz.sessionId;
   audio.volume = state.viz.audioVolumes[kind] ?? 1;
-  audio.playbackRate = state.viz.playbackRate;
   audio.onloadedmetadata = () => {
+    if (!visualizerSessionCurrent(sessionId, state.viz.songFolder)) return;
     state.viz.audioReady[kind] = true;
     state.viz.audioNames[kind] = file.name;
-    try { audio.currentTime = state.viz.currentMs / 1000; } catch (_) {}
+    songTransport()?.markReady?.(kind, audio, { sessionId, role: kind, dynamic: false });
     updateAudioStatus();
     toast(`Attached ${kind}: ${file.name}. It remains local and is not copied.`);
   };
@@ -1362,11 +1428,9 @@ function attachAudio(event, kind) {
 
 function animationLoop(now) {
   if (state.viz.playing && state.viz.bundle) {
-    const primary = primaryAudio();
-    if (primary && !primary.paused) {
-      state.viz.currentMs = primary.currentTime * 1000;
-      syncAudioTracks(false);
-    } else {
+    const transportTime = songTransport()?.currentTimeMs?.();
+    if (Number.isFinite(transportTime)) state.viz.currentMs = transportTime;
+    else {
       const delta = state.viz.lastFrame ? now - state.viz.lastFrame : 0;
       state.viz.currentMs += delta * state.viz.playbackRate;
     }
@@ -1374,10 +1438,31 @@ function animationLoop(now) {
     if (state.viz.currentMs >= state.viz.durationMs) {
       state.viz.currentMs = state.viz.durationMs;
       state.viz.playing = false;
-      for (const audio of audioElements()) audio.pause();
+      state.viz.lifecycle = "finished";
+      songTransport()?.finish?.(state.viz.durationMs, { sessionId: state.viz.sessionId });
       updatePlayButton();
     }
-    updateTimeUI(); drawVisualizer(); drawTimeline(); updateEventsNow();
+    updateTimeUI();
+    drawVisualizer();
+    if (now - state.viz.renderMetrics.lastTimelineAt >= 80) {
+      state.viz.renderMetrics.lastTimelineAt = now;
+      state.viz.renderMetrics.timelineDraws += 1;
+      drawTimeline();
+    }
+    if (now - state.viz.renderMetrics.lastEventsAt >= 100) {
+      state.viz.renderMetrics.lastEventsAt = now;
+      state.viz.renderMetrics.eventUiUpdates += 1;
+      updateEventsNow();
+    }
+  }
+  state.viz.renderMetrics.frames += 1;
+  if (!state.viz.renderMetrics.lastSampleAt) {
+    state.viz.renderMetrics.lastSampleAt = now;
+    state.viz.renderMetrics.lastSampleFrames = state.viz.renderMetrics.frames;
+  } else if (now - state.viz.renderMetrics.lastSampleAt >= 1000) {
+    state.viz.renderMetrics.fps = (state.viz.renderMetrics.frames - state.viz.renderMetrics.lastSampleFrames) * 1000 / (now - state.viz.renderMetrics.lastSampleAt);
+    state.viz.renderMetrics.lastSampleAt = now;
+    state.viz.renderMetrics.lastSampleFrames = state.viz.renderMetrics.frames;
   }
   requestAnimationFrame(animationLoop);
 }
@@ -1404,12 +1489,59 @@ function resizeCanvases() { drawVisualizer(); drawTimeline(); }
 const laneColors = ["#c24fa6", "#42ddff", "#55f486", "#ff5571", "#ffd166", "#a98cff", "#ff9f68", "#72d3ff", "#e67cff"];
 const eventColors = { dodge: "#ff6b8a", dodge_warning: "#ffd166", lane_transform: "#a98cff", visual: "#75e6ff", presentation: "#73809d", scroll_speed: "#69f0ae", unmapped: "#b9bfd2" };
 
+function lowerBoundTime(rows, target) {
+  let low = 0;
+  let high = rows.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if (Number(rows[middle]?.time_ms || 0) < target) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
+function ensureChartRenderCache() {
+  const cache = state.viz.renderCache;
+  if (cache.bundle === state.viz.bundle) return cache;
+  cache.bundle = state.viz.bundle;
+  const notes = state.viz.bundle?.notes || [];
+  cache.playerNotes = notes.filter(note => note.owner === "player" && note.lane !== null && note.lane !== undefined).sort((a, b) => Number(a.time_ms || 0) - Number(b.time_ms || 0));
+  cache.opponentNotes = notes.filter(note => note.owner === "opponent" && note.lane !== null && note.lane !== undefined).sort((a, b) => Number(a.time_ms || 0) - Number(b.time_ms || 0));
+  cache.events = [...(state.viz.bundle?.events || [])].sort((a, b) => Number(a.time_ms || 0) - Number(b.time_ms || 0));
+  cache.maxSustain.player = cache.playerNotes.reduce((m, note) => Math.max(m, Number(note.sustain_ms || 0)), 0);
+  cache.maxSustain.opponent = cache.opponentNotes.reduce((m, note) => Math.max(m, Number(note.sustain_ms || 0)), 0);
+  return cache;
+}
+
+function visibleTimedRows(rows, current, behindMs, aheadMs, lookback = 0) {
+  const start = lowerBoundTime(rows, current - behindMs - lookback);
+  const visible = [];
+  for (let index = start; index < rows.length; index++) {
+    const row = rows[index];
+    const time = Number(row.time_ms || 0);
+    if (time > current + aheadMs) break;
+    const end = Number(row.end_ms ?? time + Number(row.sustain_ms || 0));
+    if (end >= current - behindMs) visible.push(row);
+  }
+  return visible;
+}
+
+function visibleChartNotes(owner, current, behindMs, aheadMs) {
+  const cache = ensureChartRenderCache();
+  const rows = owner === "opponent" ? cache.opponentNotes : cache.playerNotes;
+  const visible = visibleTimedRows(rows, current, behindMs, aheadMs, cache.maxSustain[owner] || 0);
+  state.viz.renderMetrics.activeNotes += visible.length;
+  return visible;
+}
+
 function drawVisualizer() {
   const canvas = $("#visualizerCanvas");
   if (!canvas) return;
   const { ctx, width, height } = resizeCanvas(canvas);
   ctx.clearRect(0,0,width,height);
   state.viz.renderObjects = [];
+  state.viz.renderMetrics.activeNotes = 0;
+  state.viz.renderMetrics.activeEvents = 0;
   if (!state.viz.bundle) return;
 
   const showOpp = state.viz.showOpponent && Boolean(state.viz.bundle.notes?.some(note => note.owner === 'opponent'));
@@ -1432,19 +1564,19 @@ function drawVisualizer() {
 
   ctx.fillStyle = "rgba(255,255,255,.018)";
   ctx.fillRect(0,0,width,height);
-  if (showOpp) drawField(ctx, startX, fieldWidth, receptorY, pixelsPerMs, aheadMs, behindMs, direction, "opponent");
-  drawField(ctx, showOpp ? startX + fieldWidth + gap : startX, fieldWidth, receptorY, pixelsPerMs, aheadMs, behindMs, direction, "player");
-  if (eventWidth) drawEventRail(ctx, width - eventWidth + 4, eventWidth - 10, receptorY, pixelsPerMs, aheadMs, behindMs, direction);
+  if (showOpp) drawField(ctx, startX, fieldWidth, receptorY, pixelsPerMs, aheadMs, behindMs, direction, "opponent", height);
+  drawField(ctx, showOpp ? startX + fieldWidth + gap : startX, fieldWidth, receptorY, pixelsPerMs, aheadMs, behindMs, direction, "player", height);
+  if (eventWidth) drawEventRail(ctx, width - eventWidth + 4, eventWidth - 10, receptorY, pixelsPerMs, aheadMs, behindMs, direction, height);
 }
 
-function drawField(ctx, x, width, receptorY, pixelsPerMs, aheadMs, behindMs, direction, owner) {
+function drawField(ctx, x, width, receptorY, pixelsPerMs, aheadMs, behindMs, direction, owner, canvasHeight) {
   const keyCount = Number(state.viz.bundle.summary.key_count || 4);
   const laneGap = .5;
   const laneWidth = (width - laneGap * (keyCount - 1)) / keyCount;
   const current = state.viz.currentMs;
-  const notes = (state.viz.bundle.notes || []).filter(note => note.owner === owner && note.lane !== null && note.time_ms >= current - behindMs && note.time_ms <= current + aheadMs);
+  const notes = visibleChartNotes(owner, current, behindMs, aheadMs);
   const isPlayer = owner === "player";
-  const fieldHeight = ctx.canvas.getBoundingClientRect().height - 36;
+  const fieldHeight = canvasHeight - 36;
 
   ctx.save();
   roundRect(ctx, x, 18, width, fieldHeight, 16);
@@ -1700,12 +1832,13 @@ function drawHold(ctx, lane, cx, width, yStart, yEnd, alpha, note = null) {
   ctx.restore();
 }
 
-function drawEventRail(ctx, x, width, receptorY, pixelsPerMs, aheadMs, behindMs, direction) {
+function drawEventRail(ctx, x, width, receptorY, pixelsPerMs, aheadMs, behindMs, direction, canvasHeight) {
   const current = state.viz.currentMs;
   const mappings = state.viz.bundle.mappings?.event_types || {};
-  const events = state.viz.bundle.events.filter(event => event.time_ms >= current - behindMs && event.time_ms <= current + aheadMs);
+  const events = visibleTimedRows(ensureChartRenderCache().events, current, behindMs, aheadMs);
+  state.viz.renderMetrics.activeEvents = events.length;
   ctx.save();
-  ctx.fillStyle = "rgba(4,6,12,.7)"; roundRect(ctx,x,18,width,ctx.canvas.getBoundingClientRect().height-36,14);ctx.fill();
+  ctx.fillStyle = "rgba(4,6,12,.7)"; roundRect(ctx,x,18,width,canvasHeight-36,14);ctx.fill();
   ctx.fillStyle="rgba(255,255,255,.55)";ctx.font="800 10px system-ui";ctx.textAlign="center";ctx.fillText("MECH",x+width/2,36);
   for (const event of events) {
     const category = mappings[event.name]?.category || "unmapped";
