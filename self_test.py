@@ -128,7 +128,7 @@ def main() -> None:
         scripts = {
             name: (web_root / name).read_text(encoding="utf-8")
             for name in [
-                "app.js", "visualizer.js", "global-bridge.js", "shared-results.js",
+                "app.js", "visualizer.js", "global-bridge.js", "song-transport.js", "shared-results.js",
                 "visualizer-preferences.js", "practice-polish.js", "practice.js",
                 "practice-hotfix.js", "practice-tools.js", "practice-comfort.js",
                 "practice-save.js", "song-media.js", "analysis.js",
@@ -138,7 +138,7 @@ def main() -> None:
             ]
         }
         minimums = {
-            "visualizer.js": 1000, "shared-results.js": 5000,
+            "visualizer.js": 1000, "song-transport.js": 8000, "shared-results.js": 5000,
             "visualizer-preferences.js": 5000, "practice-polish.js": 20000,
             "practice.js": 10000, "practice-hotfix.js": 10000,
             "practice-tools.js": 10000, "practice-comfort.js": 20000,
@@ -163,6 +163,7 @@ def main() -> None:
         assert len(atlas_png) > 30_000
 
         assert "window.matchChart = matchChart" in scripts["global-bridge.js"]
+        assert "window.rilSongTransport" in scripts["song-transport.js"]
         assert "exactStats" in scripts["shared-results.js"]
         assert "ril-visualizer-preferences:v1" in scripts["visualizer-preferences.js"]
         assert "practiceCountdownOverlay" in scripts["practice-polish.js"]
@@ -186,7 +187,7 @@ def main() -> None:
         assert "practiceContextToolbar" in scripts["workspace-ui.js"]
         assert "navGroup(\"Library\"" in scripts["workspace-ui.js"]
         for script in [
-            "/global-bridge.js", "/shared-results.js", "/visualizer-preferences.js",
+            "/global-bridge.js", "/song-transport.js", "/shared-results.js", "/visualizer-preferences.js",
             "/practice-polish.js", "/practice-comfort.js", "/practice-save.js",
             "/song-media.js", "/analysis.js", "/analysis-structure-bridge.js",
             "/analysis-unified.js", "/song-picker.js", "/ril-packages.js",
