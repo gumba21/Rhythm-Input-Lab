@@ -132,6 +132,10 @@ Completed in the current development branch:
 - shared Practice/Visualizer song transport with explicit lifecycle states, session/operation generations, coherent multi-stem play/pause/seek/rate ownership, and stale-async invalidation
 - new-song session reset for live Practice results and Visualizer replay state, including rapid A → B → A load protection
 - render-path audit with duplicate Practice canvas painting removed, time-window note culling, throttled Visualizer timeline/status updates, and profiling counters exposed under Diagnostics
+- deterministic FNF Combined Chart generator operating on the neutral chart model with the original player/right-side stream as the backbone
+- beat-relative phrase/handoff detection plus gap-fill, safe handoff, sparse-accent, collision, sustain, micro-jack, and local-density rules across Light/Balanced/Hard strengths
+- Combined Chart preview/save workflow in Song Details with derived neutral-RIL provenance, unchanged events/audio, separate-library output, and authored-note-only generation
+- dedicated alternating-vocals fixture and deterministic Combined Chart regression coverage
 
 Remaining 5.0 work:
 
