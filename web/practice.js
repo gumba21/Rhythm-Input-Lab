@@ -649,12 +649,14 @@
     const url = URL.createObjectURL(file);
     audio.dataset.url = url;
     audio.src = url;
+    const sessionId = practice.sessionId;
     audio.volume = state.viz.audioVolumes?.[kind] ?? 1;
     audio.playbackRate = practice.speed;
     audio.onloadedmetadata = () => {
+      if (!practiceSessionCurrent(sessionId)) return;
       state.viz.audioReady[kind] = true;
       state.viz.audioNames[kind] = file.name;
-      try { audio.currentTime = practice.currentMs / 1000; } catch (_) {}
+      songTransport()?.markReady?.(kind, audio, { sessionId, role: kind, dynamic: false });
       updatePracticeAudioStatus();
       if (typeof updateAudioStatus === "function") updateAudioStatus();
       toast(`Attached ${kind}: ${file.name}.`);
