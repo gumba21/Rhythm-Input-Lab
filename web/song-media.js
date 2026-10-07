@@ -10,6 +10,8 @@
     meta: {},
   };
 
+  function transport() { return window.rilSongTransport || null; }
+
   function activeFolder() {
     if (q("#view-practice")?.classList.contains("active")) {
       return window.rilPracticeEngine?.practice?.songFolder || null;
@@ -51,6 +53,7 @@
   function detachAudio(kind) {
     const audio = audioNode(kind);
     if (!audio) return;
+    transport()?.markNotReady?.(kind, audio);
     audio.pause();
     if (audio.dataset.url?.startsWith("blob:")) URL.revokeObjectURL(audio.dataset.url);
     audio.removeAttribute("src");
@@ -60,7 +63,13 @@
     if (window.state?.viz?.audioNames) window.state.viz.audioNames[kind] = "";
   }
 
-  function loadSavedTrack(folder, kind, row) {
+  function sessionStillOwns(folder, sessionId = null) {
+    const owner = transport();
+    if (sessionId && owner) return owner.isSession(sessionId, null, folder);
+    return folder === activeFolder();
+  }
+
+  function loadSavedTrack(folder, kind, row, sessionId = null) {
     const audio = audioNode(kind);
     if (!audio || !row?.url) return;
     detachAudio(kind);
@@ -69,45 +78,45 @@
     audio.dataset.url = url;
     audio.src = url;
     audio.volume = window.state?.viz?.audioVolumes?.[kind] ?? 1;
-    audio.playbackRate = q("#view-practice")?.classList.contains("active")
-      ? Number(window.rilPracticeEngine?.practice?.speed || 1)
-      : Number(window.state?.viz?.playbackRate || 1);
     audio.onloadedmetadata = () => {
-      if (folder !== activeFolder()) return;
+      if (!sessionStillOwns(folder, sessionId)) return;
       window.state.viz.audioReady[kind] = true;
       window.state.viz.audioNames[kind] = `${row.filename} · saved`;
-      const currentMs = q("#view-practice")?.classList.contains("active")
-        ? Number(window.rilPracticeEngine?.practice?.currentMs || 0)
-        : Number(window.state?.viz?.currentMs || 0);
-      try { audio.currentTime = Math.max(0, currentMs / 1000); } catch (_) {}
+      transport()?.markReady?.(kind, audio, {
+        sessionId: sessionId || transport()?.currentSession?.().id,
+        role: kind,
+        dynamic: false,
+      });
       updateStatuses("loaded from song folder");
     };
     audio.onerror = () => {
-      if (folder !== activeFolder()) return;
+      if (!sessionStillOwns(folder, sessionId)) return;
+      transport()?.markNotReady?.(kind, audio);
       window.state.viz.audioReady[kind] = false;
       window.state.viz.audioNames[kind] = "";
       updateStatuses(`${labelFor(kind)} could not be loaded`);
     };
   }
 
-  async function loadSavedAudio(folder, force = false) {
-    if (!folder || runtime.loadingFolder === folder || (!force && runtime.loadedFolder === folder)) return;
+  async function loadSavedAudio(folder, force = false, sessionId = null) {
+    if (!folder || (runtime.loadingFolder === folder && !force) || (!force && runtime.loadedFolder === folder)) return;
     runtime.loadingFolder = folder;
+    const capturedSession = sessionId || transport()?.currentSession?.().id || null;
     try {
       const meta = await jsonApi(`/api/song-media/meta?folder=${encodeURIComponent(folder)}`);
-      if (folder !== activeFolder()) return;
+      if (!sessionStillOwns(folder, capturedSession)) return;
       runtime.meta = meta || {};
       for (const kind of ["instrumental", "vocals"]) {
-        if (meta?.[kind]) loadSavedTrack(folder, kind, meta[kind]);
+        if (meta?.[kind]) loadSavedTrack(folder, kind, meta[kind], capturedSession);
         else detachAudio(kind);
       }
       runtime.loadedFolder = folder;
       updateStatuses(Object.keys(meta || {}).length ? "saved audio ready" : "no saved audio");
       updateSavedBadges();
     } catch (error) {
-      if (folder === activeFolder()) updateStatuses(`audio lookup failed: ${error.message}`);
+      if (sessionStillOwns(folder, capturedSession)) updateStatuses(`audio lookup failed: ${error.message}`);
     } finally {
-      runtime.loadingFolder = null;
+      if (runtime.loadingFolder === folder) runtime.loadingFolder = null;
     }
   }
 
@@ -235,25 +244,35 @@
   }
 
   let previousFolder = null;
-  function tick() {
+  function checkActiveFolder() {
     bindControls();
     const folder = activeFolder();
     if (folder && folder !== previousFolder) {
       previousFolder = folder;
       runtime.loadedFolder = null;
       runtime.meta = {};
-      loadSavedAudio(folder, true);
+      const session = transport()?.currentSession?.();
+      loadSavedAudio(folder, true, session?.folder === folder ? session.id : null);
     }
     if (!folder && previousFolder) {
       previousFolder = null;
       runtime.loadedFolder = null;
       runtime.meta = {};
     }
-    requestAnimationFrame(tick);
   }
+
+  window.addEventListener("ril:transport-session", event => {
+    const detail = event.detail || {};
+    if (!detail.folder || !["practice", "visualizer"].includes(detail.owner)) return;
+    previousFolder = detail.folder;
+    runtime.loadedFolder = null;
+    runtime.meta = {};
+    loadSavedAudio(detail.folder, true, detail.sessionId);
+  });
 
   installStyles();
   bindControls();
   window.rilSongMedia = { loadSavedAudio, uploadTrack, clearSavedTrack };
-  requestAnimationFrame(tick);
+  checkActiveFolder();
+  setInterval(checkActiveFolder, 250);
 })();
