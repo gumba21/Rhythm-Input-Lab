@@ -24,7 +24,8 @@
 
   const loadVisualizer = () => loadScript('/visualizer.js', () => {
     loadScript('/global-bridge.js', () => {
-      loadScript('/shared-results.js', () => {
+      loadScript('/song-transport.js', () => {
+        loadScript('/shared-results.js', () => {
         loadScript('/song-tools.js', () => {
           loadScript('/v45-polish.js', () => {
             loadScript('/visualizer-preferences.js', () => {
@@ -87,6 +88,7 @@
           });
         });
       });
+    });
     });
   });
 
