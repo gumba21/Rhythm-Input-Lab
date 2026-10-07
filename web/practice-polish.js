@@ -752,6 +752,7 @@
     runtime.observedAttempt = null;
     runtime.hasStarted = false;
     showResultActions(false);
+    renderRunData();
   });
 
   window.rilPracticePolish = {
