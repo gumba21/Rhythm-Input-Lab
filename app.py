@@ -4,6 +4,7 @@ import backend as _backend
 import rhythm_input_lab_core as _core
 from asset_backend import install_note_atlas_endpoint
 from bundle_compat import install_bundle_compat
+from combined_chart_backend import install_combined_chart_endpoint
 from discord_export_backend import install_discord_export_endpoint
 from fnf_batch_import import install_fnf_batch_import
 from media_backend import install_song_media_endpoint
@@ -34,6 +35,7 @@ install_song_media_endpoint(_backend)
 install_fnf_batch_import(_backend)
 install_practice_attempt_endpoint(_backend)
 install_ril_package_endpoint(_backend)
+install_combined_chart_endpoint(_backend)
 install_ril_export_reliability(_backend)
 install_osu_import_endpoint(_backend)
 install_quaver_import_endpoint(_backend)
