@@ -126,7 +126,7 @@
       setValue("#laneLength", preferences.laneHeight, "input");
       const offset = document.querySelector("#offsetInput");
       if (offset) offset.value = String(Math.round(state.viz.offsetMs || 0));
-      for (const audio of typeof audioElements === "function" ? audioElements() : []) audio.playbackRate = state.viz.playbackRate;
+      window.rilSongTransport?.setRate?.(state.viz.playbackRate, { sessionId: state.viz.sessionId });
       updateVizButtons?.();
       updatePlayButton?.();
       if (state.viz.bundle) recomputeComparison?.();
