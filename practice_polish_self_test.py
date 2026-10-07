@@ -77,9 +77,11 @@ def main() -> None:
     polish_js = (web / "practice-polish.js").read_text(encoding="utf-8")
     hotfix_js = (web / "practice-state-hotfix.js").read_text(encoding="utf-8")
     app_js = (web / "app.js").read_text(encoding="utf-8")
-    assert "runtime.bypassClick = true" in polish_js
+    assert "runtime.engine?.startPractice?.()" in polish_js
+    assert 'p.lifecycle = "counting-in"' in polish_js
+    assert "button.click()" not in polish_js
     assert "if (!event.isTrusted) return;" in hotfix_js
-    assert app_js.index("/practice-polish.js") < app_js.index("/practice-state-hotfix.js") < app_js.index("/practice.js")
+    assert app_js.index("/song-transport.js") < app_js.index("/practice-polish.js") < app_js.index("/practice-state-hotfix.js") < app_js.index("/practice.js")
 
     assert getattr(app._backend.Handler, "_ril_discord_export_installed", False)
     assert getattr(packages, "_neutral_chart_polish_installed", False)
