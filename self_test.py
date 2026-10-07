@@ -129,6 +129,7 @@ def main() -> None:
             name: (web_root / name).read_text(encoding="utf-8")
             for name in [
                 "app.js", "visualizer.js", "global-bridge.js", "song-transport.js", "shared-results.js",
+                "combined-chart.js",
                 "visualizer-preferences.js", "practice-polish.js", "practice.js",
                 "practice-hotfix.js", "practice-tools.js", "practice-comfort.js",
                 "practice-save.js", "song-media.js", "analysis.js",
@@ -139,6 +140,7 @@ def main() -> None:
         }
         minimums = {
             "visualizer.js": 1000, "song-transport.js": 8000, "shared-results.js": 5000,
+            "combined-chart.js": 5000,
             "visualizer-preferences.js": 5000, "practice-polish.js": 20000,
             "practice.js": 10000, "practice-hotfix.js": 10000,
             "practice-tools.js": 10000, "practice-comfort.js": 20000,
@@ -164,6 +166,9 @@ def main() -> None:
 
         assert "window.matchChart = matchChart" in scripts["global-bridge.js"]
         assert "window.rilSongTransport" in scripts["song-transport.js"]
+        assert "window.rilCombinedChart" in scripts["combined-chart.js"]
+        assert "/api/combined-chart/preview" in scripts["combined-chart.js"]
+        assert "/api/combined-chart/save" in scripts["combined-chart.js"]
         assert "exactStats" in scripts["shared-results.js"]
         assert "ril-visualizer-preferences:v1" in scripts["visualizer-preferences.js"]
         assert "practiceCountdownOverlay" in scripts["practice-polish.js"]
@@ -187,7 +192,7 @@ def main() -> None:
         assert "practiceContextToolbar" in scripts["workspace-ui.js"]
         assert "navGroup(\"Library\"" in scripts["workspace-ui.js"]
         for script in [
-            "/global-bridge.js", "/song-transport.js", "/shared-results.js", "/visualizer-preferences.js",
+            "/global-bridge.js", "/song-transport.js", "/shared-results.js", "/combined-chart.js", "/visualizer-preferences.js",
             "/practice-polish.js", "/practice-comfort.js", "/practice-save.js",
             "/song-media.js", "/analysis.js", "/analysis-structure-bridge.js",
             "/analysis-unified.js", "/song-picker.js", "/ril-packages.js",
@@ -201,6 +206,7 @@ def main() -> None:
         assert getattr(v4._backend.Handler, "_ril_song_media_installed", False)
         assert getattr(v4._backend.Handler, "_ril_practice_attempt_installed", False)
         assert getattr(v4._backend.Handler, "_ril_package_installed", False)
+        assert getattr(v4._backend.Handler, "_ril_combined_chart_installed", False)
         assert getattr(v4._backend.Handler, "_ril_osu_import_installed", False)
         assert getattr(v4._backend.Handler, "_ril_quaver_import_installed", False)
         assert getattr(v4._backend.Handler, "_ril_discord_export_installed", False)
