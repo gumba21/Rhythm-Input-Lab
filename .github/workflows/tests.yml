@@ -18,7 +18,7 @@ jobs:
       - name: Compile Python
         run: |
           python -m py_compile \
-            app.py asset_backend.py backend.py bundle_compat.py console.py discord_export_backend.py \
+            app.py asset_backend.py backend.py bundle_compat.py combined_chart.py combined_chart_backend.py console.py discord_export_backend.py \
             rhythm_input_lab_core.py fnf_importer.py fnf_codename_import.py fnf_batch_backend.py \
             fnf_batch_import.py fnf_batch_import_self_test.py media_backend.py neutral_chart_polish.py \
             osu_importer.py osu_import_backend.py osu_importer_self_test.py quaver_importer.py \
@@ -26,7 +26,7 @@ jobs:
             practice_attempt_backend.py practice_polish_self_test.py practice_engine_backpolish_self_test.py \
             reports_backend.py ril_export_reliability.py ril_export_jobs.py ril_export_thread_guard.py \
             ril_package_backend.py ril_package_self_test.py development_polish_self_test.py \
-            export_jobs_self_test.py workspace_ui_self_test.py transport_integration_self_test.py self_test.py ril_version.py
+            export_jobs_self_test.py workspace_ui_self_test.py transport_integration_self_test.py combined_chart_self_test.py self_test.py ril_version.py
       - name: Check JavaScript syntax
         run: |
           node --check web/app.js
@@ -77,6 +77,7 @@ jobs:
           python practice_engine_backpolish_self_test.py >> self-test.log 2>&1
           python workspace_ui_self_test.py >> self-test.log 2>&1
           python transport_integration_self_test.py >> self-test.log 2>&1
+          python combined_chart_self_test.py >> self-test.log 2>&1
           node transport_state_self_test.js >> self-test.log 2>&1
       - name: Upload self-test log
         if: always()
