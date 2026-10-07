@@ -49,6 +49,12 @@
     restartTimer: null,
     lastAttempt: null,
     loading: false,
+    loadGeneration: 0,
+    sessionId: 0,
+    lifecycle: "unloaded",
+    renderNotes: [],
+    maxSustainMs: 0,
+    renderMetrics: { frames: 0, fps: 0, lastSampleAt: 0, lastSampleFrames: 0, activeNotes: 0 },
   };
 
   function clamp(value, minimum, maximum) {
@@ -99,6 +105,20 @@
 
   function isPracticeVisible() {
     return q("#view-practice")?.classList.contains("active");
+  }
+
+  function songTransport() {
+    return window.rilSongTransport || null;
+  }
+
+  function setPracticeLifecycle(next) {
+    practice.lifecycle = next;
+    songTransport()?.transition?.(next, practice.sessionId);
+  }
+
+  function practiceSessionCurrent(sessionId = practice.sessionId) {
+    const transport = songTransport();
+    return !transport || transport.isSession(sessionId, "practice", practice.songFolder);
   }
 
   function storageKey() {
@@ -379,14 +399,63 @@
     if ([...select.options].some(option => option.value === current)) select.value = current;
   }
 
+  function resetPracticeSessionForLoad(folder) {
+    clearTimeout(practice.restartTimer);
+    practice.restartTimer = null;
+    practice.playing = false;
+    practice.finished = false;
+    practice.lastAttempt = null;
+    practice.completedLoops = 0;
+    practice.songFolder = folder;
+    practice.songName = folder || "";
+    practice.bundle = null;
+    practice.notes = [];
+    practice.renderNotes = [];
+    practice.maxSustainMs = 0;
+    practice.sections = [];
+    practice.durationMs = 0;
+    practice.startMs = 0;
+    practice.endMs = 0;
+    practice.currentMs = 0;
+    practice.noteStates = new Map();
+    practice.activeLanes.clear();
+    practice.heldNotes.clear();
+    practice.openPresses.clear();
+    practice.presses = [];
+    practice.pressId = 0;
+    practice.stats = newStats();
+    practice.lastJudgment = "";
+    practice.lastDelta = null;
+    practice.judgmentUntil = 0;
+    state.viz.bundle = null;
+    state.viz.songFolder = folder || null;
+    state.viz.durationMs = 0;
+    state.viz.chartDurationMs = 0;
+    state.viz.currentMs = 0;
+    state.viz.playing = false;
+    state.viz.attempt = null;
+    state.viz.comparison = null;
+    state.viz.standaloneReplay = false;
+    q("#practiceOverlay")?.classList.add("hidden");
+    renderLastAttempt();
+    updatePracticeHud();
+    updatePracticeButtons();
+    updatePracticeTransport();
+    window.dispatchEvent(new CustomEvent("ril:practice-session-reset", { detail: { folder, sessionId: practice.sessionId } }));
+  }
+
   async function loadPracticeSong(folder) {
-    if (practice.loading) return;
-    stopPractice(false);
+    const generation = ++practice.loadGeneration;
+    const transport = songTransport();
+    practice.sessionId = transport?.beginSession?.("practice", folder, { rate: practice.speed, positionMs: 0 }) || generation;
     practice.loading = true;
+    practice.lifecycle = "loading";
+    resetPracticeSessionForLoad(folder);
     q("#practiceCanvasEmpty").innerHTML = '<div><h2>Loading chart…</h2></div>';
     q("#practiceCanvasEmpty").classList.remove("hidden");
     try {
       const data = await api(`/api/song?folder=${encodeURIComponent(folder)}`);
+      if (generation !== practice.loadGeneration || !practiceSessionCurrent(practice.sessionId)) return;
       if (!data.bundle) throw new Error("This song does not have an imported chart.");
       practice.songFolder = folder;
       practice.songName = data.song?.song_name || data.bundle.summary?.song_name || folder;
@@ -396,6 +465,8 @@
       practice.notes = (data.bundle.notes || [])
         .filter(note => note.owner === "player" && note.lane !== null && note.lane !== undefined)
         .map((note, index) => ({ ...note, _practiceId: index }));
+      practice.renderNotes = [...practice.notes].sort((a, b) => Number(a.time_ms || 0) - Number(b.time_ms || 0));
+      practice.maxSustainMs = practice.renderNotes.reduce((maximum, note) => Math.max(maximum, Number(note.sustain_ms || 0)), 0);
       practice.sections = sectionRanges();
       configurePracticeKeys();
 
@@ -428,6 +499,10 @@
       practice.finished = false;
       practice.noteStates.clear();
       practice.stats = newStats();
+      practice.lifecycle = "ready";
+      transport?.transition?.("ready", practice.sessionId);
+      transport?.setRate?.(practice.speed, { sessionId: practice.sessionId });
+      transport?.prepare?.(practice.currentMs, "ready", { sessionId: practice.sessionId });
 
       q("#practiceTitle").textContent = practice.songName;
       q("#practiceSubtitle").textContent = `${practice.keyCount}K · ${formatNumber(data.bundle.summary?.base_bpm, 1)} BPM · ${formatNumber(practice.notes.filter(note => !isHazardNote(note)).length)} playable notes`;
@@ -446,12 +521,16 @@
       drawPractice();
       toast(`${practice.songName} is ready to practice.`);
     } catch (error) {
+      if (generation !== practice.loadGeneration || !practiceSessionCurrent(practice.sessionId)) return;
       practice.bundle = null;
       practice.notes = [];
+      practice.renderNotes = [];
+      practice.lifecycle = "unloaded";
+      transport?.transition?.("unloaded", practice.sessionId);
       q("#practiceCanvasEmpty").innerHTML = `<div><h2>Could not load chart</h2><p>${escapeHtml(error.message)}</p></div>`;
       toast(error.message, "error", 7000);
     } finally {
-      practice.loading = false;
+      if (generation === practice.loadGeneration) practice.loading = false;
     }
   }
 
@@ -545,7 +624,7 @@
   function setPracticeSpeed(value, persist = true) {
     practice.speed = clamp(value, 0.25, 2);
     qa(".practice-speed").forEach(button => button.classList.toggle("primary", Number(button.dataset.speed) === practice.speed));
-    for (const audio of audioElements()) audio.playbackRate = practice.speed;
+    songTransport()?.setRate?.(practice.speed, { sessionId: practice.sessionId });
     if (persist) saveSongSettings();
   }
 
@@ -589,37 +668,15 @@
   }
 
   function syncPracticeAudio(force = false) {
-    const target = practice.currentMs / 1000;
-    const primary = primaryAudio();
-    for (const audio of audioElements()) {
-      const kind = audio.id === "vocalsAudio" ? "vocals" : "instrumental";
-      if (!state.viz.audioReady[kind]) continue;
-      audio.playbackRate = practice.speed;
-      if (force || Math.abs(audio.currentTime - target) > 0.045) {
-        try { audio.currentTime = Math.max(0, target); } catch (_) {}
-      }
-    }
-    if (primary) {
-      for (const audio of audioElements()) {
-        if (audio === primary) continue;
-        const kind = audio.id === "vocalsAudio" ? "vocals" : "instrumental";
-        if (state.viz.audioReady[kind] && Math.abs(audio.currentTime - primary.currentTime) > 0.035) {
-          try { audio.currentTime = primary.currentTime; } catch (_) {}
-        }
-      }
-    }
+    return songTransport()?.correctDrift?.(Boolean(force)) || 0;
   }
 
   function playPracticeAudio() {
-    syncPracticeAudio(true);
-    for (const audio of audioElements()) {
-      const kind = audio.id === "vocalsAudio" ? "vocals" : "instrumental";
-      if (state.viz.audioReady[kind]) audio.play().catch(() => {});
-    }
+    return songTransport()?.playAt?.(practice.currentMs, { sessionId: practice.sessionId });
   }
 
-  function pausePracticeAudio() {
-    for (const audio of audioElements()) audio.pause();
+  function pausePracticeAudio(nextState = "paused") {
+    return songTransport()?.pause?.(nextState, { sessionId: practice.sessionId });
   }
 
   function resetPracticeAttempt() {
@@ -641,14 +698,17 @@
   }
 
   function startPractice() {
-    if (!practice.bundle) return toast("Choose a chart first.", "error");
-    stopPractice(false);
+    if (!practice.bundle || practice.loading) return toast("Choose a chart first.", "error");
+    clearTimeout(practice.restartTimer);
+    practice.restartTimer = null;
+    pausePracticeAudio("ready");
     resetPracticeAttempt();
-    practice.currentMs = Math.max(0, practice.startMs - practice.leadInMs);
+    practice.currentMs = Math.max(0, practice.startMs);
     state.viz.currentMs = practice.currentMs;
     practice.playing = true;
     practice.lastFrame = performance.now();
-    q("#practiceOverlay").classList.remove("hidden");
+    practice.lifecycle = "playing";
+    q("#practiceOverlay").classList.add("hidden");
     q(".practice-canvas-wrap").focus();
     playPracticeAudio();
     updatePracticeButtons();
@@ -657,14 +717,18 @@
   }
 
   function togglePracticePause() {
-    if (!practice.bundle) return;
+    if (!practice.bundle || practice.loading) return;
     if (practice.playing) {
+      practice.currentMs = songTransport()?.currentTimeMs?.() ?? practice.currentMs;
+      state.viz.currentMs = practice.currentMs;
       practice.playing = false;
-      pausePracticeAudio();
+      practice.lifecycle = "paused";
+      pausePracticeAudio("paused");
       q("#practiceOverlay").innerHTML = 'Paused<small>Press Escape or the Resume button.</small>';
       q("#practiceOverlay").classList.remove("hidden");
     } else if (!practice.finished) {
       practice.playing = true;
+      practice.lifecycle = "playing";
       practice.lastFrame = performance.now();
       playPracticeAudio();
       q("#practiceOverlay").classList.add("hidden");
@@ -672,9 +736,12 @@
     updatePracticeButtons();
   }
 
-  function stopPractice(clearOverlay = true) {
+  function stopPractice(clearOverlay = true, nextState = null) {
+    if (practice.playing) practice.currentMs = songTransport()?.currentTimeMs?.() ?? practice.currentMs;
     practice.playing = false;
-    pausePracticeAudio();
+    const lifecycle = nextState || (practice.finished ? "finished" : practice.bundle ? "ready" : "unloaded");
+    practice.lifecycle = lifecycle;
+    pausePracticeAudio(lifecycle);
     closeOpenPresses();
     practice.activeLanes.clear();
     practice.heldNotes.clear();
@@ -691,10 +758,19 @@
   }
 
   function seekPractice(ms) {
-    if (!practice.bundle || practice.playing) return;
+    if (!practice.bundle || practice.loading) return;
+    const wasPlaying = practice.playing;
     practice.currentMs = clamp(ms, 0, practice.durationMs);
     state.viz.currentMs = practice.currentMs;
-    syncPracticeAudio(true);
+    practice.lifecycle = "seeking";
+    songTransport()?.seek?.(practice.currentMs, {
+      sessionId: practice.sessionId,
+      resume: wasPlaying,
+      nextState: wasPlaying ? "playing" : (practice.finished ? "finished" : "paused"),
+    });
+    practice.playing = wasPlaying;
+    practice.lifecycle = wasPlaying ? "playing" : (practice.finished ? "finished" : "paused");
+    practice.lastFrame = performance.now();
     updatePracticeTransport();
     if (practice.sections.length) q("#practiceSectionSelect").value = String(currentSectionIndex());
     drawPractice();
@@ -869,7 +945,8 @@
     }
     practice.finished = true;
     practice.playing = false;
-    pausePracticeAudio();
+    practice.lifecycle = "finished";
+    songTransport()?.finish?.(practice.endMs, { sessionId: practice.sessionId });
     closeOpenPresses();
     practice.activeLanes.clear();
     practice.heldNotes.clear();
@@ -999,11 +1076,9 @@
 
   function practiceAnimationLoop(now) {
     if (practice.playing && practice.bundle) {
-      const primary = primaryAudio();
-      if (primary && !primary.paused) {
-        practice.currentMs = primary.currentTime * 1000;
-        syncPracticeAudio(false);
-      } else {
+      const transportTime = songTransport()?.currentTimeMs?.();
+      if (Number.isFinite(transportTime)) practice.currentMs = transportTime;
+      else {
         const delta = practice.lastFrame ? now - practice.lastFrame : 0;
         practice.currentMs += delta * practice.speed;
       }
@@ -1031,6 +1106,33 @@
     const ctx = canvas.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     return { ctx, width: rect.width, height: rect.height };
+  }
+
+  function lowerBoundByTime(rows, target) {
+    let low = 0;
+    let high = rows.length;
+    while (low < high) {
+      const middle = (low + high) >> 1;
+      if (Number(rows[middle]?.time_ms || 0) < target) low = middle + 1;
+      else high = middle;
+    }
+    return low;
+  }
+
+  function visiblePracticeNotes(current, behindMs, aheadMs) {
+    const rows = practice.renderNotes.length ? practice.renderNotes : practice.notes;
+    const earliest = current - behindMs - practice.maxSustainMs;
+    const start = lowerBoundByTime(rows, earliest);
+    const visible = [];
+    for (let index = start; index < rows.length; index++) {
+      const note = rows[index];
+      const time = Number(note.time_ms || 0);
+      if (time > current + aheadMs) break;
+      const end = Number(note.end_ms ?? time + Number(note.sustain_ms || 0));
+      if (end >= current - behindMs && time >= practice.startMs - 1 && time < practice.endMs) visible.push(note);
+    }
+    practice.renderMetrics.activeNotes = visible.length;
+    return visible;
   }
 
   function drawPractice(now = performance.now()) {
@@ -1081,11 +1183,7 @@
     ctx.lineTo(startX + fieldWidth, receptorY);
     ctx.stroke();
 
-    const visible = practice.notes.filter(note => {
-      const time = Number(note.time_ms);
-      const end = Number(note.end_ms ?? time + Number(note.sustain_ms || 0));
-      return end >= current - behindMs && time <= current + aheadMs && time >= practice.startMs - 1 && time < practice.endMs;
-    });
+    const visible = visiblePracticeNotes(current, behindMs, aheadMs);
 
     const previousViewMode = state.viz.viewMode;
     state.viz.viewMode = "chart";
@@ -1144,6 +1242,16 @@
     ctx.textAlign = "right";
     ctx.fillText(`${practice.completedLoops} loop${practice.completedLoops === 1 ? "" : "s"}`, startX + fieldWidth - 10, practice.downscroll ? height - 27 : 37);
 
+    practice.renderMetrics.frames += 1;
+    if (!practice.renderMetrics.lastSampleAt) {
+      practice.renderMetrics.lastSampleAt = now;
+      practice.renderMetrics.lastSampleFrames = practice.renderMetrics.frames;
+    } else if (now - practice.renderMetrics.lastSampleAt >= 1000) {
+      practice.renderMetrics.fps = (practice.renderMetrics.frames - practice.renderMetrics.lastSampleFrames) * 1000 / (now - practice.renderMetrics.lastSampleAt);
+      practice.renderMetrics.lastSampleAt = now;
+      practice.renderMetrics.lastSampleFrames = practice.renderMetrics.frames;
+    }
+
     if (practice.lastJudgment && now <= practice.judgmentUntil) {
       const fade = clamp((practice.judgmentUntil - now) / 600, 0, 1);
       ctx.save();
@@ -1194,6 +1302,13 @@
       practice,
       setPracticeRange,
       seekPractice,
+      startPractice,
+      stopPractice,
+      togglePracticePause,
+      resetPracticeAttempt,
+      finishPracticeAttempt,
+      setPracticeSpeed,
+      setPracticeLifecycle,
       formatPracticeTime,
       accuracy,
     };
