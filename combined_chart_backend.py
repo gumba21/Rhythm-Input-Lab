@@ -10,6 +10,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
+import bundle_compat
 import combined_chart
 import rhythm_input_lab_core as core
 import ril_package_backend as packages
@@ -114,7 +115,7 @@ def save_combined_chart(app: Any, payload: dict[str, Any], app_version: str) -> 
         bundle,
         {"strength": strength, "song_name": title},
     )
-    generated = result["chart"]
+    generated = bundle_compat.complete_bundle_summary(result["chart"])
     target_folder = _unique_folder(app.output_root, title)
     target_folder.mkdir(parents=True, exist_ok=False)
 
