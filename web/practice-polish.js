@@ -57,45 +57,22 @@
     return Boolean(runtime.practice?.keyToLane?.has(key));
   }
 
-  function audioNodes() {
-    return [q("#instrumentalAudio"), q("#vocalsAudio")].filter(Boolean);
+  function transport() {
+    return window.rilSongTransport || null;
   }
 
-  function readyAudioNodes() {
-    return audioNodes().filter(audio => {
-      const kind = audio.id === "vocalsAudio" ? "vocals" : "instrumental";
-      return Boolean(window.state?.viz?.audioReady?.[kind] && audio.src);
-    });
+  function pauseAudio(nextState = "ready") {
+    const p = runtime.practice;
+    return transport()?.pause?.(nextState, { sessionId: p?.sessionId });
   }
 
-  function pauseAudio() {
-    for (const audio of audioNodes()) audio.pause();
-  }
-
-  function prepareAudio(startMs) {
-    const target = Math.max(0, Number(startMs || 0)) / 1000;
-    for (const audio of readyAudioNodes()) {
-      audio.pause();
-      audio.playbackRate = Number(runtime.practice?.speed || 1);
-      try { audio.currentTime = target; } catch (_) {}
-    }
+  function prepareAudio(startMs, nextState = "ready") {
+    const p = runtime.practice;
+    return transport()?.prepare?.(Math.max(0, Number(startMs || 0)), nextState, { sessionId: p?.sessionId });
   }
 
   function alignAudioAfterStart() {
-    setTimeout(() => {
-      const p = runtime.practice;
-      if (!p?.playing) return;
-      const rows = readyAudioNodes();
-      const primary = rows.find(audio => audio.id === "instrumentalAudio") || rows[0];
-      if (!primary) return;
-      for (const audio of rows) {
-        audio.playbackRate = Number(p.speed || 1);
-        if (audio !== primary && Math.abs(audio.currentTime - primary.currentTime) > 0.025) {
-          try { audio.currentTime = primary.currentTime; } catch (_) {}
-        }
-        if (audio.paused) audio.play().catch(() => {});
-      }
-    }, 90);
+    transport()?.correctDrift?.(true);
   }
 
   function formatTime(ms, digits = 3) {
@@ -187,17 +164,10 @@
     p.currentMs = Number(p.startMs || 0);
     if (window.state?.viz) window.state.viz.currentMs = p.currentMs;
     updateCountdownTransport(p.currentMs);
-    prepareAudio(p.startMs);
+    prepareAudio(p.startMs, "ready");
     showCountdownLabel("GO!", `${formatTime(p.startMs)} → ${formatTime(p.endMs)}`);
-    runtime.bypassClick = true;
-    const previousLeadIn = Number(p.leadInMs || leadIn);
-    p.leadInMs = 0;
     button.disabled = false;
-    try { button.click(); }
-    finally {
-      p.leadInMs = previousLeadIn;
-      runtime.bypassClick = false;
-    }
+    runtime.engine?.startPractice?.();
     runtime.hasStarted = true;
     runtime.activeStats = p.stats;
     alignAudioAfterStart();
@@ -216,7 +186,8 @@
     clearTimeout(runtime.loopTimer);
     runtime.loopTimer = 0;
     p.playing = false;
-    pauseAudio();
+    p.lifecycle = "counting-in";
+    prepareAudio(p.startMs, "counting-in");
     p.activeLanes?.clear?.();
     p.heldNotes?.clear?.();
     p.openPresses?.clear?.();
@@ -226,9 +197,8 @@
     const leadInMs = Math.max(350, Math.min(5000, Number(p.leadInMs || 1500)));
     const token = ++runtime.countdownToken;
     const startedAt = performance.now();
-    runtime.countdown = { token, kind, button, leadInMs, startedAt };
+    runtime.countdown = { token, kind, button, leadInMs, startedAt, sessionId: p.sessionId };
     runtime.hasStarted = false;
-    prepareAudio(p.startMs);
 
     const frame = now => {
       if (!runtime.countdown || runtime.countdown.token !== token) return;
@@ -258,11 +228,13 @@
     runtime.countdownToken += 1;
     cancelAnimationFrame(runtime.countdownFrame);
     runtime.countdownFrame = 0;
-    pauseAudio();
+    pauseAudio("ready");
+    if (p) p.lifecycle = p.bundle ? "ready" : "unloaded";
     if (p && resetPosition) {
       p.currentMs = Number(p.startMs || 0);
       if (window.state?.viz) window.state.viz.currentMs = p.currentMs;
       updateCountdownTransport(p.currentMs);
+      prepareAudio(p.currentMs, "ready");
     }
     hideCountdownLabel();
     if (!silent) window.toast?.("Count-in cancelled.");
@@ -270,20 +242,13 @@
     return true;
   }
 
-  function primaryAudio() {
-    const rows = readyAudioNodes();
-    return rows.find(audio => audio.id === "instrumentalAudio") || rows[0] || null;
-  }
-
   function audioStatusText() {
-    const rows = readyAudioNodes();
+    const info = transport()?.diagnostics?.();
+    const rows = info?.stems || [];
     if (!rows.length) return "Silent playback";
-    if (rows.length === 1) return `${rows[0].id === "vocalsAudio" ? "Vocals" : "Instrumental"} ready`;
-    const primary = primaryAudio();
-    const other = rows.find(audio => audio !== primary);
-    if (!primary || !other) return "Audio ready";
-    const drift = (other.currentTime - primary.currentTime) * 1000;
-    return `Track drift ${drift >= 0 ? "+" : ""}${Math.round(drift)} ms`;
+    if (rows.length === 1) return `${rows[0].role === "vocals" ? "Vocals" : "Instrumental"} ready`;
+    const drift = Number(info.lastDriftMs || 0);
+    return `Transport drift ${drift >= 0 ? "+" : ""}${Math.round(drift)} ms · ${rows.length} stems`;
   }
 
   function timingAt(ms) {
@@ -320,9 +285,9 @@
 
   function currentStateLabel() {
     const p = runtime.practice;
-    if (!p?.bundle) return ["No chart", "neutral"];
-    if (runtime.countdown) return ["Count-in", "countdown"];
-    if (p.playing) {
+    if (!p?.bundle) return [p?.loading ? "Loading" : "No chart", "neutral"];
+    if (runtime.countdown || p.lifecycle === "counting-in") return ["Count-in", "countdown"];
+    if (p.playing || p.lifecycle === "playing") {
       const pause = activeBreak(Number(p.currentMs || 0));
       return pause ? ["Break", "break"] : ["Playing", "playing"];
     }
@@ -771,8 +736,23 @@
   }, true);
 
   document.addEventListener("change", event => {
-    if (event.target?.id === "practiceSongSelect") cancelCountdown({ silent: true });
+    if (event.target?.id === "practiceSongSelect") cancelCountdown({ silent: true, resetPosition: false });
   }, true);
+
+  window.addEventListener("ril:transport-session", event => {
+    if (event.detail?.owner === "practice") {
+      cancelCountdown({ silent: true, resetPosition: false });
+      runtime.hasStarted = false;
+      runtime.observedAttempt = null;
+      showResultActions(false);
+    }
+  });
+
+  window.addEventListener("ril:practice-session-reset", () => {
+    runtime.observedAttempt = null;
+    runtime.hasStarted = false;
+    showResultActions(false);
+  });
 
   window.rilPracticePolish = {
     beginCountdown,
