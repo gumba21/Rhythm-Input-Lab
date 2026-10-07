@@ -129,10 +129,13 @@ Completed in the current development branch:
 - grouped Library, Play, Analyze, and System navigation prepared for future tools without adding placeholder pages
 - responsive workspace layout and dedicated UI integration smoke coverage
 - dedicated Practice-engine architecture notes, licensing notices, and smoke coverage
+- shared Practice/Visualizer song transport with explicit lifecycle states, session/operation generations, coherent multi-stem play/pause/seek/rate ownership, and stale-async invalidation
+- new-song session reset for live Practice results and Visualizer replay state, including rapid A → B → A load protection
+- render-path audit with duplicate Practice canvas painting removed, time-window note culling, throttled Visualizer timeline/status updates, and profiling counters exposed under Diagnostics
 
 Remaining 5.0 work:
 
-- hands-on latency, dense-pattern, sustain, speed-change, looping, pause/resume, and focus-loss testing across several machines
+- hands-on transport/runtime verification from `TRANSPORT_RUNTIME_TESTING.md`: perceptual multi-stem lock, pause/resume, seeks, speed changes, looping, rapid song switches, view changes, dense-chart FPS, latency, sustains, and focus loss across several machines
 - one canonical result document shared by live Practice, its result screen, saved attempts, Visualizer, Analysis, and reports
 - remove the remaining Practice-local accuracy/statistics rebuild after shared-result parity is proven
 - StepMania `.sm` / `.ssc` import into the neutral RIL model
