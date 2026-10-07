@@ -293,6 +293,7 @@
     if (!transition("seeking", sessionId)) return false;
     const token = invalidateOperation("play");
     const rows = activeEntries();
+    const stagedNodes = new Set(rows.map(row => row.node));
     pauseRows(rows);
     setAnchor(positionMs);
     for (const row of rows) applyProperties(row);
@@ -304,7 +305,7 @@
       const pending = [];
       for (const row of activeEntries()) {
         applyProperties(row);
-        setNodeTime(row, runtime.positionMs);
+        if (!stagedNodes.has(row.node)) setNodeTime(row, runtime.positionMs);
         let promise;
         try { promise = row.node.play(); }
         catch (_) { continue; }
