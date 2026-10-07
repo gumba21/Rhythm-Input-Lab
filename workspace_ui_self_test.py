@@ -29,6 +29,7 @@ def main() -> None:
     song_tools = read("song-tools.js")
     import_center = read("import-center.js")
     fnf_batch = read("fnf-batch-import.js")
+    combined = read("combined-chart.js")
 
     # Final ownership/load order: legacy engines first, workspace composition last.
     assert_all(
@@ -39,10 +40,11 @@ def main() -> None:
         "'/song-picker-modal.js'",
         "'/workspace-ui.js'",
         "'/fnf-batch-import.js'",
+        "'/combined-chart.js'",
     )
     assert "/practice-library-menu.js" not in app, "Old Practice library wrapper should not remain in the load chain"
     assert app.index("/practice.js") < app.index("/practice-tools.js") < app.index("/practice-comfort.js") < app.index("/workspace-ui.js")
-    assert app.index("/song-picker.js") < app.index("/song-picker-modal.js") < app.index("/import-center.js") < app.index("/fnf-batch-import.js") < app.index("/workspace-ui.js")
+    assert app.index("/song-picker.js") < app.index("/song-picker-modal.js") < app.index("/import-center.js") < app.index("/fnf-batch-import.js") < app.index("/combined-chart.js") < app.index("/workspace-ui.js")
 
     # Shared library foundation and scalable organization.
     assert_all(
@@ -152,6 +154,19 @@ def main() -> None:
         'data-song-detail-tab="source"',
         'data-song-detail-tab="statistics"',
         'id="saveMechanicMappings"',
+        'id="generateCombinedChart"',
+        'window.rilCombinedChart?.open?.(folder, data)',
+    )
+    assert_all(
+        combined,
+        'window.rilCombinedChart =',
+        '"/api/combined-chart/preview"',
+        '"/api/combined-chart/save"',
+        '<option value="light">Light</option>',
+        '<option value="balanced" selected>Balanced</option>',
+        '<option value="hard">Hard</option>',
+        "Save as new chart",
+        "v1 only selects authored source notes",
     )
 
     # Practice keeps the existing bound controls but moves them into contextual surfaces.
