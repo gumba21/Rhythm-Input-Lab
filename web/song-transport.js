@@ -140,6 +140,24 @@
     } catch (_) {}
   }
 
+  function settleSeek(row, targetMs, token) {
+    if (!row?.node || !operationCurrent(token)) return Promise.resolve(false);
+    setNodeTime(row, targetMs);
+    if (!row.node.seeking) return Promise.resolve(true);
+    return new Promise(resolve => {
+      let settled = false;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        row.node.removeEventListener?.("seeked", done);
+        clearTimeout(timer);
+        resolve(operationCurrent(token));
+      };
+      row.node.addEventListener?.("seeked", done, { once: true });
+      const timer = setTimeout(done, 220);
+    });
+  }
+
   function invalidateOperation(label) {
     runtime.operationId += 1;
     runtime.lastOperation = label;
@@ -272,33 +290,44 @@
   function playAt(positionMs = runtime.positionMs, options = {}) {
     const sessionId = Number(options.sessionId ?? runtime.sessionId);
     if (!isSession(sessionId)) return false;
-    if (!transition("playing", sessionId)) return false;
+    if (!transition("seeking", sessionId)) return false;
     const token = invalidateOperation("play");
     const rows = activeEntries();
     pauseRows(rows);
     setAnchor(positionMs);
-    for (const row of rows) {
-      applyProperties(row);
-      setNodeTime(row, runtime.positionMs);
-    }
-    const pending = [];
-    for (const row of rows) {
-      let promise;
-      try { promise = row.node.play(); }
-      catch (_) { continue; }
-      if (promise?.then) {
-        pending.push(Promise.resolve(promise).then(() => {
-          if (!operationCurrent(token) || runtime.lifecycle !== "playing") {
-            runtime.staleAsyncDrops += 1;
-            try { row.node.pause(); } catch (_) {}
-          }
-        }).catch(() => {}));
+    for (const row of rows) applyProperties(row);
+
+    const startRows = () => {
+      if (!operationCurrent(token) || runtime.lifecycle !== "seeking") return;
+      if (!transition("playing", sessionId)) return;
+      setAnchor(runtime.positionMs);
+      const pending = [];
+      for (const row of activeEntries()) {
+        applyProperties(row);
+        setNodeTime(row, runtime.positionMs);
+        let promise;
+        try { promise = row.node.play(); }
+        catch (_) { continue; }
+        if (promise?.then) {
+          pending.push(Promise.resolve(promise).then(() => {
+            if (!operationCurrent(token) || runtime.lifecycle !== "playing") {
+              runtime.staleAsyncDrops += 1;
+              try { row.node.pause(); } catch (_) {}
+            }
+          }).catch(() => {}));
+        }
       }
-    }
-    if (pending.length) {
-      Promise.allSettled(pending).then(() => {
-        if (operationCurrent(token) && runtime.lifecycle === "playing") correctDrift(true);
-      });
+      if (pending.length) {
+        Promise.allSettled(pending).then(() => {
+          if (operationCurrent(token) && runtime.lifecycle === "playing") correctDrift(true);
+        });
+      }
+    };
+
+    if (!rows.length) {
+      startRows();
+    } else {
+      Promise.allSettled(rows.map(row => settleSeek(row, runtime.positionMs, token))).then(() => startRows());
     }
     emit("ril:transport-position", { positionMs: runtime.positionMs });
     return true;
